@@ -9,9 +9,10 @@ Cookie-free, privacy-friendly web analytics that runs as a single Go binary with
 ## Features (planned v1)
 
 **Tracking**
-- Tiny dependency-free tracking script (under 1 KB): page views, custom events, SPA route changes.
+- Tiny dependency-free tracking script (under 1 KB): page views, SPA route changes, custom events with properties.
 - Respects Do Not Track.
-- Served from the site's own domain so ad blockers don't drop it.
+- One line to install: a `<script>` tag with the site's domain.
+- Proxy guide for Vercel, Caddy and Nginx, so the script loads from your own domain.
 
 **Privacy**
 - No cookies, no local storage, no fingerprint kept.
@@ -28,15 +29,25 @@ Cookie-free, privacy-friendly web analytics that runs as a single Go binary with
 - Countries, devices, browsers and operating systems.
 - Click any row to filter the whole dashboard.
 - Goals and conversion rate (page or custom event).
+- Custom event properties breakdown.
+- Funnels.
+- CSV export.
 
-**Accounts and sites**
+**Accounts and teams**
+- Sign up with email verification, password reset, account deletion with all data.
 - Multiple sites per account.
+- Team invitations by email with owner, admin and viewer roles.
 - Optional public dashboard per site.
+
+**Hosted plan**
+- Free and paid plans with a monthly usage meter.
+- Payments through iyzico subscriptions; card data never reaches the server.
+- Self-hosted mode has no plans or limits.
 
 **Server**
 - Bot and fake request filtering, Origin check against registered sites, rate limiting.
 - Local GeoIP database (no third-party lookup).
-- Raw events plus hourly rollup tables in SQLite (WAL).
+- Events and visits in SQLite (WAL), nightly backup.
 
 ## Screenshots
 
@@ -47,6 +58,7 @@ _Coming soon._
 - **Server:** Go, SQLite (WAL)
 - **Dashboard:** TypeScript, Vite
 - **Tracker:** plain JavaScript
+- **Payments:** iyzico
 - **Hosting:** Caddy, systemd
 
 ## Installation
@@ -57,8 +69,6 @@ _Coming soon._
 
 _Coming soon._
 
-## Future Plans
+## License
 
-- Team invitations and roles.
-- CSV export.
-- Hosted paid plan.
+[AGPL-3.0](LICENSE)

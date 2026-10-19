@@ -9,9 +9,10 @@ Tek Go dosyası ve SQLite ile çalışan, çerezsiz ve gizlilik dostu web analit
 ## Özellikler (v1 planı)
 
 **Takip**
-- 1 KB altında, bağımlılıksız takip betiği: sayfa görüntüleme, özel olay, SPA adres değişimi.
+- 1 KB altında, bağımlılıksız takip betiği: sayfa görüntüleme, SPA adres değişimi, özellikli özel olaylar.
 - Do Not Track ayarına uyar.
-- Reklam engelleyiciler düşürmesin diye sitenin kendi alan adından sunulur.
+- Tek satırla kurulur: sitenin alan adını taşıyan bir `<script>` etiketi.
+- Betiğin kendi alan adınızdan yüklenmesi için Vercel, Caddy ve Nginx proxy rehberi.
 
 **Gizlilik**
 - Çerez, yerel depolama ya da saklanan parmak izi yok.
@@ -28,15 +29,25 @@ Tek Go dosyası ve SQLite ile çalışan, çerezsiz ve gizlilik dostu web analit
 - Ülkeler, cihazlar, tarayıcılar ve işletim sistemleri.
 - Herhangi bir satıra tıklayarak bütün paneli süzme.
 - Hedefler ve dönüşüm oranı (sayfa ya da özel olay).
+- Özel olay özelliklerinin kırılımı.
+- Huniler.
+- CSV dışa aktarma.
 
-**Hesap ve siteler**
+**Hesap ve takım**
+- E-posta doğrulamalı kayıt, şifre sıfırlama, hesabı bütün verisiyle silme.
 - Hesap başına birden çok site.
+- E-postayla takım daveti; sahip, yönetici ve izleyici rolleri.
 - Site başına isteğe bağlı herkese açık panel.
+
+**Barındırılan hizmet**
+- Ücretsiz ve ücretli paketler, aylık kullanım sayacı.
+- iyzico aboneliğiyle ödeme; kart bilgisi sunucuya hiç gelmez.
+- Kendi sunucunuzda kurulumda paket ve limit yoktur.
 
 **Sunucu**
 - Bot ve sahte istek eleme, kayıtlı sitelere göre Origin kontrolü, hız sınırı.
 - Yerel GeoIP veritabanı (üçüncü taraf sorgusu yok).
-- SQLite'ta (WAL) ham olaylar ve saatlik özet tabloları.
+- Olaylar ve ziyaretler SQLite'ta (WAL), her gece yedek.
 
 ## Ekran Görüntüleri
 
@@ -47,6 +58,7 @@ _Yakında._
 - **Sunucu:** Go, SQLite (WAL)
 - **Panel:** TypeScript, Vite
 - **Takip betiği:** sade JavaScript
+- **Ödeme:** iyzico
 - **Barındırma:** Caddy, systemd
 
 ## Kurulum ve Çalıştırma
@@ -57,8 +69,6 @@ _Yakında._
 
 _Yakında._
 
-## Gelecek Planları
+## Lisans
 
-- Takım daveti ve roller.
-- CSV dışa aktarma.
-- Barındırılan ücretli sürüm.
+[AGPL-3.0](LICENSE)
