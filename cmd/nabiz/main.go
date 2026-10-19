@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/geo"
 	"github.com/MrcDprm/nabiz-analytics/internal/server"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
@@ -24,6 +25,7 @@ const usage = `nabiz: çerezsiz web analitiği
 
 Kullanım:
   nabiz [serve] [-addr ADRES] [-data KLASÖR] [-mode selfhost|cloud] [-trust-proxy]
+  nabiz geoip update [-data KLASÖR]   ülke veritabanını (DB-IP Lite) indirir ya da yeniler
   nabiz version
 
 Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE, NABIZ_TRUST_PROXY=1.
@@ -34,6 +36,11 @@ func main() {
 	cmd := "serve"
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
+	}
+	// "geoip update" iki kelimelik komut; bayraklar ikinci kelimeden sonra gelir.
+	sub := ""
+	if cmd == "geoip" && len(args) > 0 && args[0] != "" && args[0][0] != '-' {
+		sub, args = args[0], args[1:]
 	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
 	fs.Usage = func() { fmt.Fprint(os.Stderr, usage) }
@@ -46,6 +53,18 @@ func main() {
 	switch cmd {
 	case "version":
 		fmt.Println("nabiz", version)
+	case "geoip":
+		if sub != "update" || fs.NArg() != 0 {
+			fmt.Fprint(os.Stderr, usage)
+			os.Exit(2)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		client := &http.Client{Timeout: 5 * time.Minute}
+		if err := geo.Update(ctx, client, geo.DefaultBaseURL, geoPath(*data), time.Now()); err != nil {
+			log.Fatalf("nabiz: geoip: %v", err)
+		}
+		fmt.Println("Ülke veritabanı güncellendi. Çalışan sunucuya SIGHUP gönderince yeni dosyayı yükler.")
 	case "serve":
 		m := server.Mode(*mode)
 		if m != server.ModeSelfhost && m != server.ModeCloud {
@@ -68,6 +87,8 @@ func env(key, fallback string) string {
 	}
 	return fallback
 }
+
+func geoPath(dataDir string) string { return filepath.Join(dataDir, "geoip.mmdb") }
 
 func serve(cfg server.Config, addr, dataDir string) error {
 	// 0700: veritabanını sadece sunucuyu çalıştıran kullanıcı okuyabilsin.
