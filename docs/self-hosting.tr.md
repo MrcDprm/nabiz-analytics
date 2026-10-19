@@ -12,7 +12,15 @@ Nabız tek bir program dosyası ve bir SQLite veritabanı. Kendi sunucunda paket
 
 ## 1. Programı al
 
-[Son sürümden](https://github.com/MrcDprm/nabiz-analytics/releases/latest) `nabiz-linux-amd64` ya da `nabiz-linux-arm64` dosyasını indir ya da kendin derle (Go 1.27 ve Node 24):
+Sunucuna uygun paketi [son sürümden](https://github.com/MrcDprm/nabiz-analytics/releases/latest) indirip aç (ARM sunucularda `amd64` yerine `arm64`):
+
+```sh
+curl -LO https://github.com/MrcDprm/nabiz-analytics/releases/latest/download/nabiz-linux-amd64.tar.gz
+tar xzf nabiz-linux-amd64.tar.gz
+cd nabiz-linux-amd64
+```
+
+Pakette `nabiz` programı ve aşağıda kullanılan `deploy/` klasörü var. Kendin derlemek istersen (Go 1.27 ve Node 24):
 
 ```sh
 git clone https://github.com/MrcDprm/nabiz-analytics
