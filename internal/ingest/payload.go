@@ -9,13 +9,14 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/MrcDprm/nabiz-analytics/internal/site"
 )
 
 const (
 	MaxBody      = 2 << 10 // gövde en fazla 2 KB
 	maxName      = 64
 	maxURL       = 512
-	maxDomain    = 253
 	maxProps     = 10
 	maxPropKey   = 32
 	maxPropValue = 128
@@ -66,8 +67,8 @@ func Parse(body []byte) (*Event, error) {
 		return nil, errInvalid
 	}
 
-	site := strings.ToLower(strings.TrimSpace(p.Site))
-	if !validDomain(site) {
+	siteName := strings.ToLower(strings.TrimSpace(p.Site))
+	if !site.ValidDomain(siteName) {
 		return nil, errInvalid
 	}
 
@@ -80,7 +81,7 @@ func Parse(body []byte) (*Event, error) {
 	}
 	// Sayfanın alan adı, betikte yazan siteyle ya da onun alt alan adıyla aynı olmalı.
 	host := strings.ToLower(u.Hostname())
-	if host != site && !strings.HasSuffix(host, "."+site) {
+	if host != siteName && !strings.HasSuffix(host, "."+siteName) {
 		return nil, errInvalid
 	}
 
@@ -95,9 +96,9 @@ func Parse(body []byte) (*Event, error) {
 	q := u.Query()
 	e := &Event{
 		Name:        name,
-		Site:        site,
+		Site:        siteName,
 		Path:        path,
-		Referrer:    referrerHost(p.Referrer, host, site),
+		Referrer:    referrerHost(p.Referrer, host, siteName),
 		UTMSource:   clip(q.Get("utm_source"), maxUTM),
 		UTMMedium:   clip(q.Get("utm_medium"), maxUTM),
 		UTMCampaign: clip(q.Get("utm_campaign"), maxUTM),
@@ -173,23 +174,6 @@ func validText(s string, limit int) bool {
 	for _, r := range s {
 		if unicode.IsControl(r) {
 			return false
-		}
-	}
-	return true
-}
-
-func validDomain(s string) bool {
-	if s == "" || len(s) > maxDomain || !strings.Contains(s, ".") {
-		return false
-	}
-	for _, label := range strings.Split(s, ".") {
-		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
-			return false
-		}
-		for _, c := range label {
-			if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-') {
-				return false
-			}
 		}
 	}
 	return true
