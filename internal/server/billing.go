@@ -21,9 +21,10 @@ func billingError(w http.ResponseWriter, where string, err error) {
 	var apiErr *billing.APIError
 	switch {
 	case errors.Is(err, billing.ErrUnknownPlan), errors.Is(err, billing.ErrAlreadyActive), errors.Is(err, billing.ErrNoActive),
-		errors.Is(err, billing.ErrSameInterval), errors.Is(err, billing.ErrBadCheckout):
+		errors.Is(err, billing.ErrSameInterval), errors.Is(err, billing.ErrBadCheckout), errors.Is(err, billing.ErrPaymentsOff):
 		writeError(w, http.StatusBadRequest, err.Error())
-	case errors.Is(err, billing.ErrSiteLimit), errors.Is(err, billing.ErrMemberLimit), errors.Is(err, billing.ErrOverUsage):
+	case errors.Is(err, billing.ErrSiteLimit), errors.Is(err, billing.ErrMemberLimit), errors.Is(err, billing.ErrOverUsage),
+		errors.Is(err, billing.ErrSiteLimitFree), errors.Is(err, billing.ErrMemberLimitFree), errors.Is(err, billing.ErrOverUsageFree):
 		writeError(w, http.StatusPaymentRequired, err.Error())
 	case errors.As(err, &apiErr):
 		// iyzico'nun hata metni kullanıcıya gösterilmez (iç ayrıntı olabilir), log'a gider.
@@ -46,7 +47,7 @@ func (s *Server) billingStatus(w http.ResponseWriter, r *http.Request, u *auth.U
 		internalError(w, "paket", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"enabled": true, "plans": billing.Plans, "status": st})
+	writeJSON(w, http.StatusOK, map[string]any{"enabled": true, "payments": s.cfg.Billing.PaymentsEnabled(), "plans": billing.Plans, "status": st})
 }
 
 var (

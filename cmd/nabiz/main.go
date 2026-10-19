@@ -124,14 +124,18 @@ func main() {
 		if smtpCfg == nil {
 			log.Print("nabiz: SMTP ayarı yok, e-postalar gönderilmeyip log'a yazılıyor (sadece geliştirme için)")
 		}
-		if m == server.ModeCloud {
+		useBilling := m == server.ModeCloud
+		if useBilling {
 			iyz, codes, err := iyzicoFromEnv()
 			if err != nil {
 				log.Fatalf("nabiz: %v", err)
 			}
 			billingIyz, billingCodes = iyz, codes
+			if iyz == nil {
+				log.Print("nabiz: iyzico ayarı yok, ödeme kapalı; herkes Ücretsiz paketin sınırlarında")
+			}
 		}
-		if err := serve(cfg, *addr, *data, billingIyz, billingCodes); err != nil {
+		if err := serve(cfg, *addr, *data, useBilling, billingIyz, billingCodes); err != nil {
 			log.Fatalf("nabiz: %v", err)
 		}
 	default:
@@ -169,7 +173,7 @@ func reloadGeoOnHUP(ctx context.Context, l *geo.Locator) {
 	}
 }
 
-func serve(cfg server.Config, addr, dataDir string, iyz *billing.Iyzico, codes billing.PlanCodes) error {
+func serve(cfg server.Config, addr, dataDir string, useBilling bool, iyz *billing.Iyzico, codes billing.PlanCodes) error {
 	// 0700: veritabanını sadece sunucuyu çalıştıran kullanıcı okuyabilsin.
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
@@ -207,7 +211,8 @@ func serve(cfg server.Config, addr, dataDir string, iyz *billing.Iyzico, codes b
 	if err != nil {
 		return err
 	}
-	if iyz != nil {
+	// cloud modunda paketler ve sınırlar her zaman var; iyz nil ise ödeme kapalı.
+	if useBilling {
 		cfg.Billing = billing.New(st, iyz, codes, nil)
 	}
 	srv := server.New(cfg, st, rec, authSvc)
@@ -254,8 +259,11 @@ func iyzicoFromEnv() (*billing.Iyzico, billing.PlanCodes, error) {
 		SecretKey:  os.Getenv("NABIZ_IYZICO_SECRET_KEY"),
 		MerchantID: os.Getenv("NABIZ_IYZICO_MERCHANT_ID"),
 	}
+	if iyz.APIKey == "" && iyz.SecretKey == "" && iyz.MerchantID == "" {
+		return nil, nil, nil // hiçbiri yok: ödeme kapalı, ücretsiz barındırma
+	}
 	if iyz.APIKey == "" || iyz.SecretKey == "" || iyz.MerchantID == "" {
-		return nil, nil, errors.New("cloud modunda NABIZ_IYZICO_API_KEY, NABIZ_IYZICO_SECRET_KEY ve NABIZ_IYZICO_MERCHANT_ID gerekli")
+		return nil, nil, errors.New("NABIZ_IYZICO_API_KEY, NABIZ_IYZICO_SECRET_KEY ve NABIZ_IYZICO_MERCHANT_ID birlikte verilmeli")
 	}
 	codes := billing.PlanCodes{}
 	for _, plan := range []string{billing.Starter, billing.Growth} {

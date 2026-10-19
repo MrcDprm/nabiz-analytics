@@ -265,6 +265,42 @@ func TestLimits(t *testing.T) {
 	}
 }
 
+func TestPaymentsOff(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "nabiz.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	st.W.Exec(`INSERT INTO users (id, email, password_hash, created_at) VALUES (1, 'ali@example.com', 'x', 0)`)
+	st.W.Exec(`INSERT INTO sites (id, domain, created_at) VALUES ('s1', 'a.com', 0), ('s2', 'b.com', 0)`)
+	st.W.Exec(`INSERT INTO memberships (site_id, user_id, role) VALUES ('s1', 1, 'owner'), ('s2', 1, 'owner')`)
+	s := New(st, nil, nil, nil)
+	ctx := context.Background()
+
+	if s.PaymentsEnabled() {
+		t.Fatal("iyzico yokken ödeme açık")
+	}
+	if status, _ := s.StatusOf(ctx, 1); status.Plan.ID != Free {
+		t.Fatalf("paket = %+v", status.Plan)
+	}
+	// Sınırlar yine geçerli, ama mesaj "kendi sunucuna kur" diyor.
+	if err := s.CanAddSite(ctx, 1); err != ErrSiteLimitFree {
+		t.Fatalf("site sınırı: %v", err)
+	}
+	if err := s.CanInvite(ctx, "s1"); err != ErrMemberLimitFree {
+		t.Fatalf("takım sınırı: %v", err)
+	}
+	if _, err := s.StartCheckout(ctx, 1, "starter", "monthly", "x", "tr", customer); err != ErrPaymentsOff {
+		t.Fatalf("ödeme başladı: %v", err)
+	}
+	if err := s.HandleWebhook(ctx, WebhookEvent{IyziReferenceCode: "x"}, "imza"); err != ErrBadSignature {
+		t.Fatalf("webhook: %v", err)
+	}
+	if err := s.OnAccountDelete(ctx, 1); err != nil {
+		t.Fatalf("hesap silme: %v", err)
+	}
+}
+
 func TestAccountDeleteCancels(t *testing.T) {
 	e := setup(t)
 	ctx := context.Background()

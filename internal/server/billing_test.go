@@ -143,6 +143,25 @@ func TestFailedCallbackRedirects(t *testing.T) {
 	}
 }
 
+func TestFreeHostingWithoutPayments(t *testing.T) {
+	s, _ := mailServer(t, true)
+	s.cfg.Billing = billing.New(s.store, nil, nil, nil)
+	addUser(t, s)
+	c := sessionFrom(t, do(s, "POST", "/api/login", `{"email":"ali@example.com","password":"kahve-fincanı-7"}`, nil, nil))
+	if rec := do(s, "GET", "/api/billing", "", c, nil); !strings.Contains(rec.Body.String(), `"payments":false`) {
+		t.Fatalf("durum = %s", rec.Body)
+	}
+	if rec := do(s, "POST", "/api/billing/checkout", checkoutBody, c, nil); rec.Code != http.StatusBadRequest {
+		t.Fatalf("ödeme kapalıyken başlat = %d", rec.Code)
+	}
+	do(s, "POST", "/api/sites", `{"domain":"a.com"}`, c, nil)
+	do(s, "POST", "/api/sites", `{"domain":"b.com"}`, c, nil)
+	rec := do(s, "POST", "/api/sites", `{"domain":"c.com"}`, c, nil)
+	if rec.Code != http.StatusPaymentRequired || !strings.Contains(rec.Body.String(), "kendi sunucuna") {
+		t.Fatalf("3. site = %d %s", rec.Code, rec.Body)
+	}
+}
+
 func TestFreePlanLimits(t *testing.T) {
 	s, c, _ := billingServer(t)
 	for _, d := range []string{"a.com", "b.com"} {
