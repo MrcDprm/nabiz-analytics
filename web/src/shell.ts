@@ -37,10 +37,18 @@ export function brandMark(): SVGSVGElement {
   return svg;
 }
 
-let cloud = false;
-export function setCloud(v: boolean) {
-  cloud = v;
+export type Config = {
+  mode: string;
+  signup: boolean;
+  demo: string; // tanıtım sayfasındaki canlı site
+  sales_contract_url: string;
+  pre_info_url: string;
+};
+let cfg: Config = { mode: "selfhost", signup: false, demo: "", sales_contract_url: "", pre_info_url: "" };
+export function setConfig(c: Config) {
+  cfg = c;
 }
+export const config = () => cfg;
 
 export type ShellOptions = {
   middle?: Node[]; // site seçici vb.
@@ -103,6 +111,7 @@ export function header(o: ShellOptions): HTMLElement {
         t("logout"),
       )
     : h("a", { class: "text-btn", href: "/login" }, t("login"));
+  const signupLink = !o.user && !o.hideAccount && cfg.signup ? h("a", { class: "text-btn", href: "/signup" }, t("signup")) : null;
 
   return h(
     "header",
@@ -116,9 +125,10 @@ export function header(o: ShellOptions): HTMLElement {
       ...(o.right ?? []),
       langBtn,
       themeBtn,
-      o.user && !o.hideAccount && cloud ? h("a", { class: "text-btn", href: "/billing" }, t("plan")) : null,
+      o.user && !o.hideAccount && cfg.mode === "cloud" ? h("a", { class: "text-btn", href: "/billing" }, t("plan")) : null,
       o.user && !o.hideAccount ? h("a", { class: "text-btn", href: "/account" }, t("account")) : null,
       account,
+      signupLink,
     ),
   );
 }
@@ -128,6 +138,9 @@ export function footer(): HTMLElement {
     "footer",
     { class: "wrap foot" },
     h("span", null, t("footerPrivacy")),
+    h("a", { href: "/how-it-works" }, t("howItWorks")),
+    h("a", { href: "/privacy" }, t("privacy")),
+    h("a", { href: "/terms" }, t("terms")),
     h("a", { href: "https://db-ip.com", rel: "noopener" }, t("footerGeo")),
   );
 }

@@ -277,6 +277,47 @@ input:not([type="checkbox"]) { border: 1px solid var(--grid-bold); border-radius
   .plans td[data-label] { grid-column: 1; }
   .plans .act { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
 }
+/* Tanıtım sayfası */
+.landing-hero { border-bottom: 1px solid var(--grid-bold); }
+.landing-strip { height: 210px; border-bottom: 1px solid var(--grid-bold); }
+.landing-copy > * { max-width: 860px; }
+.landing-copy h1 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.12; letter-spacing: -0.015em; font-weight: 800; margin: 0 0 16px; }
+.lead { font-size: 19px; line-height: 1.5; margin: 0 0 18px; max-width: 64ch; }
+.landing-live { margin: 0 0 22px; }
+.landing-n { color: var(--heart); font-size: 22px; }
+.landing-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.landing-actions .link-btn { margin-top: 0; }
+.landing-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; }
+/* .wrap mobilde dolguyu sıfırlıyor; bölüm aralığı main üzerinden verilir (daha özgül seçici). */
+main .landing-copy { padding-top: 36px; padding-bottom: 40px; }
+main .landing-cols { padding-top: 40px; padding-bottom: 32px; }
+main .landing-install, main .landing-self { padding-top: 28px; padding-bottom: 28px; }
+.landing-cols h2, .landing-install h2, .landing-self h2 { font-size: 22px; margin: 0 0 10px; }
+.landing-cols ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.landing-cols .nots li::marker { content: "✕  "; color: var(--pencil); }
+.landing-install, .landing-self { border-top: 1px solid var(--grid-bold); }
+.install-line, .copy-block pre {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 14px;
+  background: var(--bar); padding: 14px 16px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0;
+}
+.secondary.link-btn { text-decoration: none; display: inline-block; }
+
+/* Metin sayfaları */
+.prose h2 { font-size: 20px; margin: 30px 0 8px; }
+.prose p, .prose li { line-height: 1.6; }
+.prose ul { padding-left: 22px; }
+.kv { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; }
+.kv th, .kv td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--grid-fine); }
+.kv th { font-size: 13px; color: var(--pencil); border-bottom-color: var(--grid-bold); }
+.kv td:last-child { color: var(--pencil); }
+.copy-block { margin: 14px 0; }
+.copy-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+@media (max-width: 760px) {
+  main .landing-copy { padding-top: 24px; padding-bottom: 28px; }
+  main .landing-cols, main .landing-install, main .landing-self { padding-top: 24px; padding-bottom: 24px; }
+  .landing-cols { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .landing-strip { height: 150px; }
+}
 .foot { margin-top: 40px; margin-bottom: 32px; font-size: 14px; color: var(--pencil); display: flex; gap: 18px; flex-wrap: wrap; }
 
 @media (max-width: 760px) {

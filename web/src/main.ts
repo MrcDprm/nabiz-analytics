@@ -4,7 +4,9 @@ import "./styles.css";
 import { api, ApiError, type Site, type User } from "./api.ts";
 import { h } from "./dom.ts";
 import { t } from "./i18n.ts";
-import { applyTheme, setCloud } from "./shell.ts";
+import { applyTheme, config, setConfig, type Config } from "./shell.ts";
+import { landingView } from "./views/landing.ts";
+import { textPage } from "./views/pages.ts";
 import { billingView } from "./views/billing.ts";
 import { dashboardView } from "./views/dashboard.ts";
 import { loginView } from "./views/login.ts";
@@ -47,6 +49,7 @@ async function render() {
     const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
 
     if (path === "/invite") return inviteView(root, user, ctx);
+    if (path === "/how-it-works" || path === "/privacy" || path === "/terms") return textPage(root, path.slice(1) as "privacy", user, ctx);
     if (path === "/billing") {
       if (!user) return navigate("/login");
       return billingView(root, user, ctx);
@@ -56,6 +59,8 @@ async function render() {
       return accountView(root, user, ctx);
     }
     if (path === "/") {
+      // Barındırılan hizmette giriş yapmamış ziyaretçi tanıtım sayfasını görür.
+      if (!user && config().mode === "cloud") return landingView(root, ctx);
       if (!user) return navigate("/login");
       // Davet bağlantısından giriş yapmaya gelindiyse davete dön.
       if (pendingInvite()) return navigate("/invite");
@@ -96,7 +101,7 @@ document.addEventListener("click", (e) => {
 addEventListener("popstate", render);
 
 applyTheme();
-api<{ mode: string }>("/api/config")
-  .then((c) => setCloud(c.mode === "cloud"))
+api<Config>("/api/config")
+  .then(setConfig)
   .catch(() => {})
   .finally(render);
