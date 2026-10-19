@@ -1,0 +1,2 @@
+# Go araçları LF bekler; Windows checkout'unda da LF kalsın.
+* text=auto eol=lf
