@@ -38,6 +38,10 @@ const en: Record<string, string> = {
   "TC kimlik numarası geçersiz": "Invalid Turkish ID number.",
   "ödemeden önce e-posta adresinizi doğrulayın": "Verify your email before paying.",
   "ödeme sağlayıcısı isteği reddetti; bilgilerini kontrol edip tekrar dene": "The payment provider rejected the request; check your details and try again.",
+  "ücretsiz sürümün site sınırına ulaştın; sınırsız kullanım için Nabız'ı kendi sunucuna kurabilirsin": "You've reached the free version's site limit; install Nabız on your own server for unlimited use.",
+  "ücretsiz sürümde takım daveti yok; takım için Nabız'ı kendi sunucuna kurabilirsin": "The free version has no team invites; install Nabız on your own server for a team.",
+  "iki aydır görüntüleme sınırını aşıyorsun; yeni site eklemek için Nabız'ı kendi sunucuna kurabilirsin": "You've been over the page view limit for two months; install Nabız on your own server to add new sites.",
+  "bu sunucuda ödeme kapalı": "Payments are off on this server.",
 };
 
 export function serverMessage(msg: string, lang: "tr" | "en"): string | null {

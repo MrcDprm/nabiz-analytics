@@ -16,7 +16,9 @@ type Status = {
   period_end?: string;
   usage: { pageviews: number; sites: number; last_month_over: boolean };
 };
-type Billing = { enabled: boolean; plans?: Plan[]; status?: Status };
+type Billing = { enabled: boolean; payments?: boolean; plans?: Plan[]; status?: Status };
+
+const REPO = "https://github.com/MrcDprm/nabiz-analytics#installation";
 
 const planName = (id: string) => tryT(`plan.${id}`) ?? id;
 const lira = (kurus: number) => new Intl.NumberFormat(locale(), { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(kurus / 100);
@@ -97,6 +99,16 @@ export async function billingView(root: HTMLElement, user: User, ctx: Ctx) {
     );
   }
   main.append(current, out);
+
+  // Ödeme kapalı (ücretsiz barındırma): satın alma yok, kendi sunucuna kurma yolu var.
+  if (!data.payments) {
+    main.append(
+      h("section", { class: "settings-block" },
+        h("p", null, t("freeHosting")),
+        h("a", { class: "secondary link-btn", href: REPO, rel: "noopener", target: "_blank" }, t("selfHostLink"))),
+    );
+    return;
+  }
 
   // --- Paket karşılaştırması ---
   let interval: "monthly" | "yearly" = st.interval ?? "monthly";

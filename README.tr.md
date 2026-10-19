@@ -39,10 +39,10 @@ Tek Go dosyası ve SQLite ile çalışan, çerezsiz ve gizlilik dostu web analit
 - E-postayla takım daveti; sahip, yönetici ve izleyici rolleri.
 - Site başına isteğe bağlı herkese açık panel.
 
-**Barındırılan hizmet**
-- Ücretsiz ve ücretli paketler, aylık kullanım sayacı.
-- iyzico aboneliğiyle ödeme; kart bilgisi sunucuya hiç gelmez.
+**Barındırılan sürüm ve paketler**
+- Herkese açık sürüm herkes için ücretsiz; aylık kullanım sayacı ve makul sınırlar var (10.000 görüntüleme, 2 site).
 - Kendi sunucunuzda kurulumda paket ve limit yoktur.
+- Üye işyeri hesabı olan işletmeciler için isteğe bağlı iyzico abonelikli ücretli paketler; kart bilgisi sunucuya hiç gelmez, webhook'lar imzalı. iyzico anahtarları verilmedikçe kapalı.
 
 **Sunucu**
 - Bot ve sahte istek eleme, kayıtlı sitelere göre Origin kontrolü, hız sınırı.

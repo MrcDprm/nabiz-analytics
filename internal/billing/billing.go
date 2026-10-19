@@ -16,15 +16,20 @@ import (
 const GracePeriod = 7 * 24 * time.Hour
 
 var (
-	ErrUnknownPlan   = errors.New("geçersiz paket ya da dönem")
-	ErrSiteLimit     = errors.New("paketinin site sınırına ulaştın; daha fazla site için paketini yükselt")
-	ErrMemberLimit   = errors.New("paketinin takım sınırına ulaştın; daha fazla üye için paketini yükselt")
-	ErrOverUsage     = errors.New("iki aydır görüntüleme sınırını aşıyorsun; yeni site eklemek için paketini yükselt")
-	ErrNoActive      = errors.New("aktif bir aboneliğin yok")
-	ErrAlreadyActive = errors.New("zaten aktif bir aboneliğin var; paket değiştirmeyi kullan")
-	ErrSameInterval  = errors.New("dönem değiştirmek için aboneliği iptal edip yeniden başlat")
-	ErrBadCheckout   = errors.New("ödeme bulunamadı ya da süresi dolmuş")
-	ErrBadSignature  = errors.New("webhook imzası geçersiz")
+	ErrUnknownPlan = errors.New("geçersiz paket ya da dönem")
+	ErrSiteLimit   = errors.New("paketinin site sınırına ulaştın; daha fazla site için paketini yükselt")
+	ErrMemberLimit = errors.New("paketinin takım sınırına ulaştın; daha fazla üye için paketini yükselt")
+	ErrOverUsage   = errors.New("iki aydır görüntüleme sınırını aşıyorsun; yeni site eklemek için paketini yükselt")
+	// Ödeme kapalıyken (ücretsiz barındırma) yükseltme yok; sınırsız kullanım kendi sunucunda.
+	ErrSiteLimitFree   = errors.New("ücretsiz sürümün site sınırına ulaştın; sınırsız kullanım için Nabız'ı kendi sunucuna kurabilirsin")
+	ErrMemberLimitFree = errors.New("ücretsiz sürümde takım daveti yok; takım için Nabız'ı kendi sunucuna kurabilirsin")
+	ErrOverUsageFree   = errors.New("iki aydır görüntüleme sınırını aşıyorsun; yeni site eklemek için Nabız'ı kendi sunucuna kurabilirsin")
+	ErrPaymentsOff     = errors.New("bu sunucuda ödeme kapalı")
+	ErrNoActive        = errors.New("aktif bir aboneliğin yok")
+	ErrAlreadyActive   = errors.New("zaten aktif bir aboneliğin var; paket değiştirmeyi kullan")
+	ErrSameInterval    = errors.New("dönem değiştirmek için aboneliği iptal edip yeniden başlat")
+	ErrBadCheckout     = errors.New("ödeme bulunamadı ya da süresi dolmuş")
+	ErrBadSignature    = errors.New("webhook imzası geçersiz")
 )
 
 // PlanCodes, iyzico panelinde oluşturulan fiyatlandırma planlarının referans kodları.
@@ -57,11 +62,24 @@ type usageEntry struct {
 	exp time.Time
 }
 
+// New ödeme servisini kurar. iyz nil ise ödeme kapalıdır: herkes Ücretsiz
+// paketin sınırlarında kalır (ör. şirketi olmayan birinin barındırdığı ücretsiz sürüm).
 func New(st *store.Store, iyz *Iyzico, codes PlanCodes, now func() time.Time) *Service {
 	if now == nil {
 		now = time.Now
 	}
 	return &Service{st: st, iyz: iyz, codes: codes, now: now, cache: make(map[int64]usageEntry)}
+}
+
+// PaymentsEnabled: bu sunucuda ücretli paket satın alınabiliyor mu?
+func (s *Service) PaymentsEnabled() bool { return s.iyz != nil }
+
+// limitErr, ödeme kapalıyken "yükselt" yerine "kendi sunucuna kur" diyen hatayı seçer.
+func (s *Service) limitErr(paid, free error) error {
+	if s.iyz == nil {
+		return free
+	}
+	return paid
 }
 
 // Status, kullanıcının paket durumu (plan sayfası gösterir).
@@ -201,10 +219,10 @@ func (s *Service) CanAddSite(ctx context.Context, userID int64) error {
 	}
 	s.forget(userID) // site sayısı değişecek
 	if st.Usage.Sites >= st.Plan.Sites {
-		return ErrSiteLimit
+		return s.limitErr(ErrSiteLimit, ErrSiteLimitFree)
 	}
 	if st.Usage.LastMonthOver && st.Usage.Pageviews > st.Plan.Pageviews {
-		return ErrOverUsage
+		return s.limitErr(ErrOverUsage, ErrOverUsageFree)
 	}
 	return nil
 }
@@ -226,7 +244,7 @@ func (s *Service) CanInvite(ctx context.Context, siteID string) error {
 		return err
 	}
 	if n >= p.Members {
-		return ErrMemberLimit
+		return s.limitErr(ErrMemberLimit, ErrMemberLimitFree)
 	}
 	return nil
 }

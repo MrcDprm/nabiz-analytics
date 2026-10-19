@@ -14,6 +14,9 @@ const CheckoutLifetime = time.Hour
 // StartCheckout iyzico'da ödeme formu açar ve kim için açıldığını kaydeder.
 // Dönen token, ödeme sayfasının adresinde kullanılır.
 func (s *Service) StartCheckout(ctx context.Context, userID int64, plan, interval, callbackURL, locale string, cust Customer) (string, error) {
+	if s.iyz == nil {
+		return "", ErrPaymentsOff
+	}
 	code, ok := s.codes[plan+"/"+interval]
 	if !Paid(plan) || !ValidInterval(interval) || !ok {
 		return "", ErrUnknownPlan
@@ -46,6 +49,9 @@ func (s *Service) CheckoutContent(ctx context.Context, token string, userID int6
 // Complete, iyzico ödeme formundan döndükten sonra sonucu iyzico'ya sorar (geri
 // dönüş isteğine güvenmez: tarayıcıdan geldiği için taklit edilebilir) ve aboneliği kaydeder.
 func (s *Service) Complete(ctx context.Context, token string) (int64, error) {
+	if s.iyz == nil {
+		return 0, ErrPaymentsOff
+	}
 	var userID int64
 	var plan, interval string
 	err := s.st.R.QueryRowContext(ctx, `SELECT user_id, plan, interval FROM checkouts WHERE token = ?`, token).Scan(&userID, &plan, &interval)
@@ -102,6 +108,9 @@ func upsert(ctx context.Context, tx *sql.Tx, userID int64, plan, interval string
 
 // Cancel aboneliği iyzico'da iptal eder; ödenmiş dönem bitene kadar paket sürer.
 func (s *Service) Cancel(ctx context.Context, userID int64) error {
+	if s.iyz == nil {
+		return ErrNoActive
+	}
 	r, err := s.sub(ctx, userID)
 	if err != nil {
 		return err
@@ -119,6 +128,9 @@ func (s *Service) Cancel(ctx context.Context, userID int64) error {
 
 // ChangePlan aktif aboneliği başka pakete taşır (aynı dönem).
 func (s *Service) ChangePlan(ctx context.Context, userID int64, plan, interval string) error {
+	if s.iyz == nil {
+		return ErrPaymentsOff
+	}
 	r, err := s.sub(ctx, userID)
 	if err != nil {
 		return err
@@ -161,7 +173,7 @@ func (s *Service) ChangePlan(ctx context.Context, userID int64, plan, interval s
 // HandleWebhook iyzico'nun aylık çekim bildirimini işler. İmza tutmazsa reddeder;
 // aynı bildirim (iyziReferenceCode) ikinci kez gelirse sessizce yok sayar.
 func (s *Service) HandleWebhook(ctx context.Context, e WebhookEvent, signature string) error {
-	if !s.iyz.VerifyWebhook(e, signature) {
+	if s.iyz == nil || !s.iyz.VerifyWebhook(e, signature) {
 		return ErrBadSignature
 	}
 	if e.IyziReferenceCode == "" {
