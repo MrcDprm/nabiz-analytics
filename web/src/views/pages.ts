@@ -1,7 +1,7 @@
 // Metin sayfaları: Nasıl çalışır, Gizlilik ve KVKK, Kullanım koşulları.
 import type { User } from "../api.ts";
 import { h } from "../dom.ts";
-import { lang, t } from "../i18n.ts";
+import { lang, pub, t } from "../i18n.ts";
 import { footer, header } from "../shell.ts";
 import { pages, type Block, type PageKey } from "../content/pages.ts";
 
@@ -49,7 +49,7 @@ export function textPage(root: HTMLElement, key: PageKey, user: User | null, ctx
   const page = pages[key][lang];
   document.title = `${page.title} | Nabız`;
   root.replaceChildren(
-    header({ user, rerender: ctx.rerender, navigate: ctx.navigate }),
+    header({ user, rerender: ctx.rerender, navigate: ctx.navigate, langHref: pub("/" + key, lang === "tr" ? "en" : "tr") }),
     h(
       "main",
       { class: "wrap narrow prose" },

@@ -80,6 +80,7 @@ select {
 .custom-range input { border: 1px solid var(--grid-bold); border-radius: 6px; padding: 5px 8px; background: var(--paper); }
 .lang { font-weight: 600; color: var(--pencil); padding: 6px 4px; }
 .lang b { color: var(--ink); }
+a.lang { text-decoration: none; }
 .icon-btn { width: 34px; height: 34px; border-radius: 6px; display: grid; place-items: center; }
 .icon-btn:hover, .text-btn:hover { background: var(--bar); }
 .theme-glyph { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }

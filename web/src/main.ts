@@ -3,7 +3,7 @@ import "@fontsource-variable/atkinson-hyperlegible-next";
 import "./styles.css";
 import { api, ApiError, type Site, type User } from "./api.ts";
 import { h } from "./dom.ts";
-import { t } from "./i18n.ts";
+import { lang, setLang, t } from "./i18n.ts";
 import { applyTheme, config, setConfig, type Config } from "./shell.ts";
 import { landingView } from "./views/landing.ts";
 import { textPage } from "./views/pages.ts";
@@ -38,6 +38,12 @@ async function render() {
   leave = [];
   const ctx = { rerender: render, navigate, onLeave: (fn: () => void) => leave.push(fn) };
   const path = decodeURIComponent(location.pathname).replace(/\/+$/, "") || "/";
+  // Tanıtım ve metin sayfalarında dil adresten gelir: /en ve /en/... İngilizce, gerisi Türkçe.
+  const en = /^\/en(\/|$)/.test(path);
+  const pubPath = en ? path.slice(3) || "/" : path;
+  const pubLang = () => {
+    if (lang !== (en ? "en" : "tr")) setLang(en ? "en" : "tr");
+  };
 
   try {
     if (path === "/login") return loginView(root, ctx);
@@ -49,7 +55,10 @@ async function render() {
     const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
 
     if (path === "/invite") return inviteView(root, user, ctx);
-    if (path === "/how-it-works" || path === "/privacy" || path === "/terms") return textPage(root, path.slice(1) as "privacy", user, ctx);
+    if (pubPath === "/how-it-works" || pubPath === "/privacy" || pubPath === "/terms") {
+      pubLang();
+      return textPage(root, pubPath.slice(1) as "privacy", user, ctx);
+    }
     if (path === "/billing") {
       if (!user) return navigate("/login");
       return billingView(root, user, ctx);
@@ -58,9 +67,12 @@ async function render() {
       if (!user) return navigate("/login");
       return accountView(root, user, ctx);
     }
-    if (path === "/") {
+    if (pubPath === "/") {
       // Barındırılan hizmette giriş yapmamış ziyaretçi tanıtım sayfasını görür.
-      if (!user && config().mode === "cloud") return landingView(root, ctx);
+      if (!user && config().mode === "cloud") {
+        pubLang();
+        return landingView(root, ctx);
+      }
       if (!user) return navigate("/login");
       // Davet bağlantısından giriş yapmaya gelindiyse davete dön.
       if (pendingInvite()) return navigate("/invite");
