@@ -15,7 +15,7 @@ Tek Go dosyası ve SQLite ile çalışan, çerezsiz ve gizlilik dostu web analit
 - Betiğin kendi alan adınızdan yüklenmesi için Vercel, Caddy ve Nginx proxy rehberi.
 
 **Gizlilik**
-- Çerez, yerel depolama ya da saklanan parmak izi yok.
+- Çerez yok, tarayıcıya hiçbir şey yazılmaz, parmak izi saklanmaz.
 - Ziyaretçiler `hash(günlük tuz + site + IP + tarayıcı)` ile sayılır. Tuz her gece yenilenir ve eskisi silinir, böylece ziyaretler günler arasında birbirine bağlanamaz.
 - IP sadece bellekte ülkeyi bulmak için kullanılır ve diske hiç yazılmaz.
 - "Nasıl çalışır / ne topluyoruz" sayfası ve KVKK / GDPR aydınlatma metni taslağı.

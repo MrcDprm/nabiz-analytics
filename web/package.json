@@ -1,0 +1,13 @@
+{
+  "name": "nabiz-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:tracker": "esbuild tracker/nabiz.js --minify --target=es2017 --outfile=dist/nabiz.js",
+    "build": "npm run build:tracker",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
