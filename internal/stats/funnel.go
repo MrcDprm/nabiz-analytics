@@ -125,3 +125,30 @@ func rowsOf(ctx context.Context, db *sql.DB, query string, args ...any) ([]Row, 
 	}
 	return out, rows.Err()
 }
+
+// PropRow: dışa aktarmada bir olayın bir özelliğinin bir değeri.
+type PropRow struct {
+	Event, Key, Value string
+	Visitors, Count   int64
+}
+
+// AllProps bütün olay özelliklerini (olay, ad, değer) döndürür; CSV için.
+func AllProps(ctx context.Context, db *sql.DB, q Query) ([]PropRow, error) {
+	ew, args := q.eventWhere(q.Range.From, q.Range.To)
+	rows, err := db.QueryContext(ctx, `SELECT e.name, p.key, p.value, uniq(e.visitor), COUNT(*) FROM events e
+		JOIN event_props p ON p.event_id = e.id
+		WHERE `+ew+` GROUP BY 1, 2, 3 ORDER BY 1, 2, 4 DESC LIMIT ?`, append(args, MaxExportRows)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PropRow{}
+	for rows.Next() {
+		var r PropRow
+		if err := rows.Scan(&r.Event, &r.Key, &r.Value, &r.Visitors, &r.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}

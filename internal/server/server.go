@@ -81,6 +81,7 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("GET /api/stats/{domain}/goals", s.statsGoals)
 	s.mux.HandleFunc("GET /api/stats/{domain}/funnels", s.statsFunnels)
 	s.mux.HandleFunc("GET /api/stats/{domain}/props", s.statsProps)
+	s.mux.HandleFunc("GET /api/stats/{domain}/export", s.export)
 	s.webRoutes()
 	return s
 }

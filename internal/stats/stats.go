@@ -279,12 +279,22 @@ func ValidBreakdown(prop string) bool {
 
 const MaxBreakdownLimit = 100
 
+// MaxExportRows: CSV dışa aktarmada bir listenin en fazla satırı.
+const MaxExportRows = 1000
+
 func GetBreakdown(ctx context.Context, db *sql.DB, q Query, prop string, limit, offset int) ([]Row, error) {
+	return breakdown(ctx, db, q, prop, min(max(limit, 1), MaxBreakdownLimit), max(offset, 0))
+}
+
+// ExportBreakdown, panel sınırı yerine dışa aktarma sınırıyla aynı listeyi verir.
+func ExportBreakdown(ctx context.Context, db *sql.DB, q Query, prop string) ([]Row, error) {
+	return breakdown(ctx, db, q, prop, MaxExportRows, 0)
+}
+
+func breakdown(ctx context.Context, db *sql.DB, q Query, prop string, limit, offset int) ([]Row, error) {
 	if !ValidBreakdown(prop) {
 		return nil, ErrBadFilter
 	}
-	limit = min(max(limit, 1), MaxBreakdownLimit)
-	offset = max(offset, 0)
 
 	var query string
 	var args []any
