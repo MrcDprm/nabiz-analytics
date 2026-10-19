@@ -25,6 +25,19 @@ const en: Record<string, string> = {
   "davet geçersiz ya da süresi dolmuş": "This invite is invalid or has expired.",
   "bu davet başka bir e-posta adresine gönderildi": "This invite was sent to another email address.",
   "sahiplik zaten sende": "You already own this site.",
+  "paketinin site sınırına ulaştın; daha fazla site için paketini yükselt": "You've reached your plan's site limit; upgrade for more sites.",
+  "paketinin takım sınırına ulaştın; daha fazla üye için paketini yükselt": "You've reached your plan's team limit; upgrade for more members.",
+  "iki aydır görüntüleme sınırını aşıyorsun; yeni site eklemek için paketini yükselt": "You've been over your page view limit for two months; upgrade to add new sites.",
+  "geçersiz paket ya da dönem": "Invalid plan or billing period.",
+  "aktif bir aboneliğin yok": "You don't have an active subscription.",
+  "zaten aktif bir aboneliğin var; paket değiştirmeyi kullan": "You already have an active subscription; switch plans instead.",
+  "dönem değiştirmek için aboneliği iptal edip yeniden başlat": "To change the billing period, cancel and start again.",
+  "devam etmek için sözleşmeleri onaylaman gerekiyor": "Accept the contracts to continue.",
+  "fatura bilgilerini eksiksiz doldur": "Fill in all billing details.",
+  "telefon numarası geçersiz (ör. +905551112233)": "Invalid phone number (e.g. +905551112233).",
+  "TC kimlik numarası geçersiz": "Invalid Turkish ID number.",
+  "ödemeden önce e-posta adresinizi doğrulayın": "Verify your email before paying.",
+  "ödeme sağlayıcısı isteği reddetti; bilgilerini kontrol edip tekrar dene": "The payment provider rejected the request; check your details and try again.",
 };
 
 export function serverMessage(msg: string, lang: "tr" | "en"): string | null {
