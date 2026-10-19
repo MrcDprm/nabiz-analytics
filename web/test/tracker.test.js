@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const source = readFileSync(new URL("../tracker/nabiz.js", import.meta.url), "utf8");
 
-function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdriver, before, visibility = "visible", src = "https://nabiz.example.com/js/nabiz.js", api } = {}) {
+function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdriver, before, visibility = "visible", src = "https://nabiz.example.com/js/nabiz.js", api, mask } = {}) {
   const sent = [];
   const listeners = {};
   const docListeners = {};
@@ -31,7 +31,7 @@ function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdrive
     visibilityState: visibility,
     currentScript: {
       src: new URL(src, href).href,
-      getAttribute: (k) => ({ "data-site": "a.com", "data-api": api })[k] ?? null,
+      getAttribute: (k) => ({ "data-site": "a.com", "data-api": api, "data-mask": mask })[k] ?? null,
     },
     addEventListener: (type, fn) => { docListeners[type] = fn; },
     removeEventListener: (type) => { delete docListeners[type]; },
@@ -73,6 +73,16 @@ test("# kısmı ve kaynak dışı sorgu değerleri gönderilmez", () => {
   const b = browser({ href: "https://zarf.example.com/d/abc?token=gizli&utm_source=linkedin&ref=x#anahtar-gizli" });
   assert.equal(b.sent[0].u, "https://zarf.example.com/d/abc?utm_source=linkedin&ref=x");
   assert.ok(!JSON.stringify(b.sent).includes("gizli"));
+});
+
+test("data-mask: kimlikli yollar kalıp olarak gönderilir", () => {
+  const b = browser({ href: "https://a.com/bookings/8f3c2a?ref=x", mask: " /bookings/:id  /r/:code " });
+  assert.equal(b.sent[0].u, "https://a.com/bookings/:id?ref=x");
+  b.navigate("/r/KDFX/");
+  assert.equal(new URL(b.sent[1].u).pathname, "/r/:code");
+  // Kalıba uymayanlar olduğu gibi: fazla/eksik parça, boş kimlik, farklı sabit parça.
+  for (const p of ["/bookings", "/bookings/", "/bookings/1/edit", "/r", "/tickets/1", "/"]) b.navigate(p);
+  assert.deepEqual(b.sent.slice(2).map((e) => new URL(e.u).pathname), ["/bookings", "/bookings/", "/bookings/1/edit", "/r", "/tickets/1", "/"]);
 });
 
 test("SPA adres değişimini sayar, aynı adresi iki kez saymaz", () => {

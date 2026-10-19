@@ -26,11 +26,27 @@
   // Gönderilen adres: sadece yol ve kaynak parametreleri. "#" sonrası (ör. Zarf'ta
   // şifre çözme anahtarı) ve diğer sorgu değerleri (ör. ?token=...) tarayıcıdan çıkmaz.
   var keep = ["utm_source", "utm_medium", "utm_campaign", "ref", "source"];
+
+  // Adresinde kimlik ya da kod geçen sayfalar: data-mask="/bookings/:id /r/:code"
+  // yazılınca yol kalıbın kendisi gönderilir; gerçek kimlik tarayıcıdan çıkmaz ve
+  // panelde bütün bu sayfalar tek satırda toplanır.
+  var masks = (script.getAttribute("data-mask") || "").split(/\s+/);
+  function path() {
+    var p = l.pathname.replace(/(.)\/$/, "$1").split("/");
+    for (var i = 0; i < masks.length; i++) {
+      var m = masks[i].split("/"), j = 0;
+      if (m.length != p.length) continue;
+      while (j < m.length && (m[j] == p[j] || (m[j].charAt(0) == ":" && p[j]))) j++;
+      if (j == m.length) return masks[i];
+    }
+    return l.pathname;
+  }
+
   function page_url() {
     var q = new URLSearchParams(l.search), out = new URLSearchParams();
     for (var i = 0; i < keep.length; i++) if (q.get(keep[i])) out.set(keep[i], q.get(keep[i]));
     var s = out.toString();
-    return l.origin + l.pathname + (s ? "?" + s : "");
+    return l.origin + path() + (s ? "?" + s : "");
   }
 
   function send(name, options) {

@@ -66,6 +66,12 @@ sudo -u nabiz nabiz user add -data /var/lib/nabiz sen@example.com
 
 Sitende İçerik Güvenliği Politikası (CSP) varsa `script-src` ve `connect-src`'ye `https://nabiz.example.com` ekle.
 
+Bazı adreslerde kimlik ya da kod geçiyorsa (`/bookings/8f3c…`, `/r/KDFX`) kalıplarını `data-mask` ile yaz. Gerçek adres yerine kalıp gönderilir; kimlik tarayıcıdan çıkmaz ve bu sayfalar panelde tek satırda toplanır:
+
+```html
+<script defer src="https://nabiz.example.com/js/nabiz.js" data-site="example.com" data-mask="/bookings/:id /r/:code"></script>
+```
+
 ## Ayarlar
 
 Bütün ayarlar `/etc/nabiz/nabiz.env` dosyasında; değiştirince `sudo systemctl restart nabiz` çalıştır.
