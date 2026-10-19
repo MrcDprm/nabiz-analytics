@@ -39,10 +39,10 @@ Cookie-free, privacy-friendly web analytics that runs as a single Go binary with
 - Team invitations by email with owner, admin and viewer roles.
 - Optional public dashboard per site.
 
-**Hosted plan**
-- Free and paid plans with a monthly usage meter.
-- Payments through iyzico subscriptions; card data never reaches the server.
+**Hosted version and plans**
+- The public instance is free for everyone, with a monthly usage meter and fair limits (10,000 page views, 2 sites).
 - Self-hosted mode has no plans or limits.
+- Optional paid plans through iyzico subscriptions for operators with a merchant account; card data never reaches the server, webhooks are signed. Off unless the iyzico keys are set.
 
 **Server**
 - Bot and fake request filtering, Origin check against registered sites, rate limiting.

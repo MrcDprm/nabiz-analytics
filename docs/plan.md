@@ -11,15 +11,14 @@ Gelecek Planları yok; aşağıdakilerin hepsi v1.0.0'dan önce biter.
 - **Panel:** canlı ziyaretçi (nabız şeridi), özet metrikler + önceki dönem, zaman grafiği, sayfalar (en çok/giriş/çıkış), kaynaklar + UTM, ülke/cihaz/tarayıcı/OS, tıkla-süz, hedefler + dönüşüm, olay özellikleri kırılımı, huniler, CSV dışa aktarma.
 - **Hesap:** herkese açık kayıt + e-posta doğrulaması, şifre sıfırlama, hesap ayarları, hesabı ve bütün veriyi silme (KVKK silme hakkı).
 - **Siteler ve takım:** çoklu site, e-postayla takım daveti, roller (sahip / yönetici / izleyici), site başına herkese açık panel.
-- **Ödeme (cloud modu):** paketler, aylık kullanım sayacı, iyzico Abonelik ile ödeme (kart bilgisi bize hiç gelmez, iyzico'nun ödeme formu), imzalı webhook, fatura/plan sayfası, limit aşımı uyarısı.
-- **Yasal sayfalar (cloud):** Mesafeli Satış Sözleşmesi, Ön Bilgilendirme Formu, İptal ve İade, Gizlilik ve KVKK Aydınlatma (hesap sahiplerinin e-posta verisi için). iyzico başvurusu bu sayfaları ister.
+- **Ödeme (cloud modu, isteğe bağlı):** paketler, aylık kullanım sayacı, iyzico Abonelik ile ödeme (kart bilgisi bize hiç gelmez, iyzico'nun kendi formu), imzalı webhook, plan sayfası. iyzico anahtarları verilmezse ödeme kapalı çalışır: herkes Ücretsiz paketin sınırlarında, daha fazlası kendi sunucunda sınırsız.
+- **Yasal sayfalar:** Gizlilik ve KVKK Aydınlatma, Kullanım Koşulları. Satış sözleşmeleri (Mesafeli Satış, Ön Bilgilendirme) sadece ödemeyi açan işletmeci için şablon olarak (docs).
 - **Tanıtım sayfası:** ana sayfa, miracdeprem.com'un herkese açık canlı panelini gösterir (sahte ekran görüntüsü değil), fiyatlar, kurulum.
 - **Sunucu:** bot eleme, Origin kontrolü, hız sınırı, gece yedeği, TR/EN, açık/koyu tema.
 
 **Dış adımlar (kod biter, bunlar Miraç'ta):**
-- iyzico üye işyeri başvurusu (şirket, şahıs şirketi olabilir, ve vergi kaydı gerekir). Başvuru onaylanana kadar ödeme iyzico sandbox'ında çalışır ve test edilir; onay gelince sadece anahtarlar değişir.
+- nabiz.miracdeprem.com ücretsiz çalışır, ödeme kapalı (2026-10-19 kararı: şirket yok ve olmayacak; ücretli paket açılmayacak). Ödeme kodu açık kaynak olarak kalır; üye işyeri hesabı olan biri NABIZ_IYZICO_* ayarlarıyla açabilir.
 - SMTP sağlayıcısı (ör. Brevo ücretsiz paket, günde 300 e-posta) ve alan adı için SPF/DKIM kaydı.
-- Fiyatlar: aşağıdaki taslak yayından önce kesinleşir.
 
 ## Mimari
 
