@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const source = readFileSync(new URL("../tracker/nabiz.js", import.meta.url), "utf8");
 
-function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdriver, before, visibility = "visible" } = {}) {
+function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdriver, before, visibility = "visible", src = "https://nabiz.example.com/js/nabiz.js", api } = {}) {
   const sent = [];
   const listeners = {};
   const docListeners = {};
@@ -28,8 +28,8 @@ function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdrive
     referrer,
     visibilityState: visibility,
     currentScript: {
-      src: "https://nabiz.example.com/js/nabiz.js",
-      getAttribute: (k) => ({ "data-site": "a.com" })[k] ?? null,
+      src: new URL(src, href).href,
+      getAttribute: (k) => ({ "data-site": "a.com", "data-api": api })[k] ?? null,
     },
     addEventListener: (type, fn) => { docListeners[type] = fn; },
     removeEventListener: (type) => { delete docListeners[type]; },
@@ -59,6 +59,12 @@ test("ilk sayfa görüntülemesini gönderir", () => {
     api: "https://nabiz.example.com/api/event",
     n: "pageview", u: "https://a.com/projects?utm_source=x", r: "https://google.com/", s: "a.com", w: 1280,
   });
+});
+
+test("proxy kurulumu: betik sitenin kendi adresinden, olaylar data-api'ye", () => {
+  const b = browser({ href: "https://a.com/blog", src: "/_v/s.js", api: "/_v/e" });
+  assert.equal(b.sent.length, 1);
+  assert.equal(b.sent[0].api, "/_v/e");
 });
 
 test("SPA adres değişimini sayar, aynı adresi iki kez saymaz", () => {
