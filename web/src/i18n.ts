@@ -257,6 +257,8 @@ const tr = {
   "status.failed": "Ödeme tamamlanmadı. Kartından para çekilmedi; tekrar deneyebilirsin.",
   "status.expired": "Ödeme formunun süresi doldu; tekrar başlat.",
   changeIntervalHint: "Aylıktan yıllığa (ya da tersi) geçmek için aboneliği iptal edip dönem bitince yeniden başlat.",
+  freeHosting: "Bu sunucuda Nabız ücretsiz ve herkes aynı sınırlarla kullanır. Daha fazla site, görüntüleme ya da takım için Nabız'ı kendi sunucuna sınırsız kurabilirsin; kodu açık ve tek dosya.",
+  selfHostLink: "Kendi sunucuna kurma rehberi",
 };
 
 type Key = keyof typeof tr;
@@ -516,6 +518,8 @@ const en: Record<Key, string> = {
   "status.failed": "The payment didn't go through. Your card wasn't charged; you can try again.",
   "status.expired": "The payment form expired; start again.",
   changeIntervalHint: "To switch between monthly and yearly, cancel and start again when the period ends.",
+  freeHosting: "Nabız is free on this server and everyone gets the same limits. For more sites, page views or a team, install Nabız on your own server with no limits; the code is open and it's a single file.",
+  selfHostLink: "Self-hosting guide",
 };
 
 const dict: Record<Lang, Record<Key, string>> = { tr, en };
