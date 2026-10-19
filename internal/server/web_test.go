@@ -71,3 +71,14 @@ func TestTimeseriesCompare(t *testing.T) {
 		t.Fatalf("çubuklar = %d / %d", len(body.Points), len(body.Previous))
 	}
 }
+
+func TestSettingsRoute(t *testing.T) {
+	s, _ := newTestServer(t)
+	s.cfg.Web = fstest.MapFS{"index.html": {Data: []byte("panel")}}
+	if rec := do(s, "GET", "/settings/miracdeprem.com", "", nil, nil); rec.Code != 200 {
+		t.Fatalf("ayarlar = %d", rec.Code)
+	}
+	if rec := do(s, "GET", "/settings/wp-admin", "", nil, nil); rec.Code != 404 {
+		t.Fatalf("geçersiz = %d", rec.Code)
+	}
+}

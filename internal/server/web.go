@@ -34,14 +34,16 @@ func (s *Server) webRoutes() {
 	index := s.serveFile("index.html", "no-cache")
 	s.mux.HandleFunc("GET /{$}", index)
 	s.mux.HandleFunc("GET /login", index)
-	s.mux.HandleFunc("GET /{domain}", func(w http.ResponseWriter, r *http.Request) {
+	sitePage := func(w http.ResponseWriter, r *http.Request) {
 		// Alan adına benzemeyen adresler (ör. /wp-admin) için 404.
 		if !site.ValidDomain(strings.ToLower(r.PathValue("domain"))) {
 			http.NotFound(w, r)
 			return
 		}
 		index(w, r)
-	})
+	}
+	s.mux.HandleFunc("GET /{domain}", sitePage)
+	s.mux.HandleFunc("GET /settings/{domain}", sitePage) // /{domain}/settings, /assets/{name} ile çakışırdı
 	s.mux.HandleFunc("GET /favicon.svg", s.serveFile("favicon.svg", "public, max-age=86400"))
 	s.mux.HandleFunc("GET /select.svg", s.serveFile("select.svg", "public, max-age=86400"))
 	s.mux.HandleFunc("GET /assets/{name}", func(w http.ResponseWriter, r *http.Request) {

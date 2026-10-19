@@ -64,11 +64,18 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("POST /api/logout", s.logout)
 	s.mux.HandleFunc("GET /api/me", s.requireUser(s.me))
 	s.mux.HandleFunc("GET /api/sites", s.requireUser(s.listSites))
+	s.mux.HandleFunc("POST /api/sites", s.requireUser(s.createSite))
+	s.mux.HandleFunc("PATCH /api/sites/{id}", s.requireUser(s.updateSite))
+	s.mux.HandleFunc("DELETE /api/sites/{id}", s.requireUser(s.deleteSite))
+	s.mux.HandleFunc("GET /api/sites/{id}/goals", s.requireUser(s.listGoals))
+	s.mux.HandleFunc("POST /api/sites/{id}/goals", s.requireUser(s.addGoal))
+	s.mux.HandleFunc("DELETE /api/sites/{id}/goals/{goal}", s.requireUser(s.deleteGoal))
 
 	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
 	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
 	s.mux.HandleFunc("GET /api/stats/{domain}/breakdown", s.statsBreakdown)
 	s.mux.HandleFunc("GET /api/stats/{domain}/live", s.statsLive)
+	s.mux.HandleFunc("GET /api/stats/{domain}/goals", s.statsGoals)
 	s.webRoutes()
 	return s
 }
