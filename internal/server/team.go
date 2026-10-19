@@ -63,6 +63,12 @@ func (s *Server) invite(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		teamError(w, "davet", err)
 		return
 	}
+	if s.cfg.Billing != nil {
+		if err := s.cfg.Billing.CanInvite(r.Context(), st.ID); err != nil {
+			billingError(w, "takım sınırı", err)
+			return
+		}
+	}
 	token, err := s.team.CreateInvite(r.Context(), st.ID, email, in.Role, u.ID)
 	if err != nil {
 		teamError(w, "davet", err)

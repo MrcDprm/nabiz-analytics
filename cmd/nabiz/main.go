@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MrcDprm/nabiz-analytics/internal/auth"
+	"github.com/MrcDprm/nabiz-analytics/internal/billing"
 	"github.com/MrcDprm/nabiz-analytics/internal/geo"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/mail"
@@ -102,6 +103,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, "nabiz: -mode selfhost ya da cloud olmalı")
 			os.Exit(2)
 		}
+		var billingIyz *billing.Iyzico
+		var billingCodes billing.PlanCodes
 		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker(), Web: web.Files(),
 			BaseURL: strings.TrimRight(*baseURL, "/"), Signup: *signup || m == server.ModeCloud}
 		if cfg.BaseURL == "" {
@@ -121,7 +124,14 @@ func main() {
 		if smtpCfg == nil {
 			log.Print("nabiz: SMTP ayarı yok, e-postalar gönderilmeyip log'a yazılıyor (sadece geliştirme için)")
 		}
-		if err := serve(cfg, *addr, *data); err != nil {
+		if m == server.ModeCloud {
+			iyz, codes, err := iyzicoFromEnv()
+			if err != nil {
+				log.Fatalf("nabiz: %v", err)
+			}
+			billingIyz, billingCodes = iyz, codes
+		}
+		if err := serve(cfg, *addr, *data, billingIyz, billingCodes); err != nil {
 			log.Fatalf("nabiz: %v", err)
 		}
 	default:
@@ -159,7 +169,7 @@ func reloadGeoOnHUP(ctx context.Context, l *geo.Locator) {
 	}
 }
 
-func serve(cfg server.Config, addr, dataDir string) error {
+func serve(cfg server.Config, addr, dataDir string, iyz *billing.Iyzico, codes billing.PlanCodes) error {
 	// 0700: veritabanını sadece sunucuyu çalıştıran kullanıcı okuyabilsin.
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
@@ -197,6 +207,9 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	if err != nil {
 		return err
 	}
+	if iyz != nil {
+		cfg.Billing = billing.New(st, iyz, codes, nil)
+	}
 	srv := server.New(cfg, st, rec, authSvc)
 	go rec.Run(ctx)
 	go srv.Run(ctx)
@@ -226,4 +239,37 @@ func serve(cfg server.Config, addr, dataDir string) error {
 		return err
 	}
 	return nil
+}
+
+// iyzicoFromEnv, barındırılan hizmetin ödeme ayarlarını ortam değişkenlerinden okur.
+// Anahtarlar asla bayrakla verilmez (komut satırı diğer kullanıcılara görünebilir).
+//
+//	NABIZ_IYZICO_API_KEY, NABIZ_IYZICO_SECRET_KEY, NABIZ_IYZICO_MERCHANT_ID
+//	NABIZ_IYZICO_BASE_URL (varsayılan sandbox)
+//	NABIZ_IYZICO_PLAN_STARTER_MONTHLY, _STARTER_YEARLY, _GROWTH_MONTHLY, _GROWTH_YEARLY
+func iyzicoFromEnv() (*billing.Iyzico, billing.PlanCodes, error) {
+	iyz := &billing.Iyzico{
+		BaseURL:    env("NABIZ_IYZICO_BASE_URL", billing.SandboxURL),
+		APIKey:     os.Getenv("NABIZ_IYZICO_API_KEY"),
+		SecretKey:  os.Getenv("NABIZ_IYZICO_SECRET_KEY"),
+		MerchantID: os.Getenv("NABIZ_IYZICO_MERCHANT_ID"),
+	}
+	if iyz.APIKey == "" || iyz.SecretKey == "" || iyz.MerchantID == "" {
+		return nil, nil, errors.New("cloud modunda NABIZ_IYZICO_API_KEY, NABIZ_IYZICO_SECRET_KEY ve NABIZ_IYZICO_MERCHANT_ID gerekli")
+	}
+	codes := billing.PlanCodes{}
+	for _, plan := range []string{billing.Starter, billing.Growth} {
+		for _, interval := range []string{"monthly", "yearly"} {
+			key := "NABIZ_IYZICO_PLAN_" + strings.ToUpper(plan) + "_" + strings.ToUpper(interval)
+			code := os.Getenv(key)
+			if code == "" {
+				return nil, nil, errors.New(key + " gerekli (iyzico panelindeki fiyatlandırma planı referans kodu)")
+			}
+			codes[plan+"/"+interval] = code
+		}
+	}
+	if iyz.BaseURL == billing.SandboxURL {
+		log.Print("nabiz: iyzico sandbox (deneme) ortamı kullanılıyor; gerçek ödeme alınmaz")
+	}
+	return iyz, codes, nil
 }

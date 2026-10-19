@@ -123,10 +123,23 @@ CREATE INDEX event_props_event ON event_props (event_id);
 -- Ödeme (cloud modu)
 CREATE TABLE subscriptions (
     user_id            INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    plan               TEXT    NOT NULL,
-    status             TEXT    NOT NULL,
-    iyzico_ref         TEXT,
-    current_period_end INTEGER
+    plan               TEXT    NOT NULL,               -- starter | growth
+    interval           TEXT    NOT NULL,               -- monthly | yearly
+    status             TEXT    NOT NULL,               -- iyzico durumu: ACTIVE, UNPAID, CANCELED...
+    iyzico_ref         TEXT    NOT NULL UNIQUE,        -- abonelik referans kodu
+    customer_ref       TEXT    NOT NULL,
+    current_period_end INTEGER NOT NULL,
+    updated_at         INTEGER NOT NULL
+) STRICT;
+
+-- Açık ödeme formları: iyzico'nun form token'ı → kim, hangi paket. Ödeme bitince silinir.
+CREATE TABLE checkouts (
+    token      TEXT    PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan       TEXT    NOT NULL,
+    interval   TEXT    NOT NULL,
+    content    TEXT    NOT NULL,  -- iyzico'nun ödeme formu betiği (ödeme sayfasında çalışır)
+    created_at INTEGER NOT NULL
 ) STRICT;
 
 CREATE TABLE webhook_log (

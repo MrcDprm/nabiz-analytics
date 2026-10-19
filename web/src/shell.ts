@@ -37,6 +37,11 @@ export function brandMark(): SVGSVGElement {
   return svg;
 }
 
+let cloud = false;
+export function setCloud(v: boolean) {
+  cloud = v;
+}
+
 export type ShellOptions = {
   middle?: Node[]; // site seçici vb.
   right?: Node[]; // dönem seçici vb.
@@ -111,6 +116,7 @@ export function header(o: ShellOptions): HTMLElement {
       ...(o.right ?? []),
       langBtn,
       themeBtn,
+      o.user && !o.hideAccount && cloud ? h("a", { class: "text-btn", href: "/billing" }, t("plan")) : null,
       o.user && !o.hideAccount ? h("a", { class: "text-btn", href: "/account" }, t("account")) : null,
       account,
     ),

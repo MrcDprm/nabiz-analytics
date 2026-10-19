@@ -4,7 +4,8 @@ import "./styles.css";
 import { api, ApiError, type Site, type User } from "./api.ts";
 import { h } from "./dom.ts";
 import { t } from "./i18n.ts";
-import { applyTheme } from "./shell.ts";
+import { applyTheme, setCloud } from "./shell.ts";
+import { billingView } from "./views/billing.ts";
 import { dashboardView } from "./views/dashboard.ts";
 import { loginView } from "./views/login.ts";
 import { notFoundView, sitesView } from "./views/sites.ts";
@@ -46,6 +47,10 @@ async function render() {
     const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
 
     if (path === "/invite") return inviteView(root, user, ctx);
+    if (path === "/billing") {
+      if (!user) return navigate("/login");
+      return billingView(root, user, ctx);
+    }
     if (path === "/account") {
       if (!user) return navigate("/login");
       return accountView(root, user, ctx);
@@ -91,4 +96,7 @@ document.addEventListener("click", (e) => {
 addEventListener("popstate", render);
 
 applyTheme();
-render();
+api<{ mode: string }>("/api/config")
+  .then((c) => setCloud(c.mode === "cloud"))
+  .catch(() => {})
+  .finally(render);
