@@ -76,6 +76,7 @@ Bütün ayarlar `/etc/nabiz/nabiz.env` dosyasında; değiştirince `sudo systemc
 | `NABIZ_BASE_URL` | Senin adresin; e-postalardaki bağlantılarda kullanılır. `cloud` için zorunlu. |
 | `NABIZ_SIGNUP` | `1` ise kendi sunucunda da herkese açık kayıt açılır. |
 | `NABIZ_DEMO_SITE` | Tanıtım sayfasında canlı nabzı gösterilen herkese açık site (`cloud`). |
+| `NABIZ_ADMIN_EMAILS` | `cloud` modunda sınırsız kullanacak işletmeci hesapları (virgülle ayrılmış). |
 | `NABIZ_SMTP_*` | Doğrulama, şifre sıfırlama ve davet e-postaları. Yoksa e-postalar sadece log'a yazılır. 587 (STARTTLS) ve 465 (TLS) portları; şifresiz bağlantı reddedilir. |
 | `NABIZ_IYZICO_*` | `cloud` modunda isteğe bağlı ücretli paketler; iyzico üye işyeri hesabı gerekir. Hepsi boşsa ödeme kapalıdır. |
 
