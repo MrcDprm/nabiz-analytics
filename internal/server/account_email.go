@@ -36,7 +36,10 @@ func (s *Server) sendMail(_ context.Context, to, lang, kind, token string) error
 }
 
 func (s *Server) config(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"signup": s.cfg.Signup, "mode": s.cfg.Mode})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"signup": s.cfg.Signup, "mode": s.cfg.Mode, "demo": s.cfg.DemoSite,
+		"sales_contract_url": s.cfg.SalesContractURL, "pre_info_url": s.cfg.PreInfoURL,
+	})
 }
 
 // accountError, kullanıcının düzeltebileceği hataları 400/403'e, gerisini 500'e çevirir.

@@ -36,6 +36,9 @@ type Config struct {
 	Signup     bool   // herkese açık kayıt açık mı
 	Mail       mail.Sender
 	Billing    *billing.Service // nil: ödeme ve limit yok (kendi sunucunda kurulum)
+	DemoSite   string           // tanıtım sayfasında canlı nabzı gösterilen herkese açık site
+	// Ödeme açıksa satış sözleşmelerinin adresleri (işletmecinin kendi metinleri).
+	SalesContractURL, PreInfoURL string
 }
 
 type Server struct {

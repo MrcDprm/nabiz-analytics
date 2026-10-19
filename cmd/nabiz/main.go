@@ -41,6 +41,7 @@ Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE,
 NABIZ_BASE_URL, NABIZ_SIGNUP=1.
 -base-url, e-postalardaki bağlantıların adresidir (ör. https://nabiz.example.com).
 -signup herkese açık kaydı açar (cloud modunda her zaman açık).
+-demo-site (NABIZ_DEMO_SITE), tanıtım sayfasında canlı nabzı gösterilecek herkese açık site.
 E-posta: NABIZ_SMTP_HOST, NABIZ_SMTP_PORT, NABIZ_SMTP_USER, NABIZ_SMTP_PASS, NABIZ_SMTP_FROM.
 SMTP yoksa e-postalar log'a yazılır (geliştirme).
 `
@@ -65,6 +66,7 @@ func main() {
 	owner := fs.String("owner", "", "")
 	baseURL := fs.String("base-url", os.Getenv("NABIZ_BASE_URL"), "")
 	signup := fs.Bool("signup", os.Getenv("NABIZ_SIGNUP") == "1", "")
+	demo := fs.String("demo-site", os.Getenv("NABIZ_DEMO_SITE"), "")
 	_ = fs.Parse(args)
 
 	switch cmd {
@@ -106,7 +108,8 @@ func main() {
 		var billingIyz *billing.Iyzico
 		var billingCodes billing.PlanCodes
 		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker(), Web: web.Files(),
-			BaseURL: strings.TrimRight(*baseURL, "/"), Signup: *signup || m == server.ModeCloud}
+			BaseURL: strings.TrimRight(*baseURL, "/"), Signup: *signup || m == server.ModeCloud, DemoSite: strings.ToLower(*demo),
+			SalesContractURL: os.Getenv("NABIZ_SALES_CONTRACT_URL"), PreInfoURL: os.Getenv("NABIZ_PRE_INFO_URL")}
 		if cfg.BaseURL == "" {
 			cfg.BaseURL = "http://" + *addr
 		}
@@ -133,6 +136,9 @@ func main() {
 			billingIyz, billingCodes = iyz, codes
 			if iyz == nil {
 				log.Print("nabiz: iyzico ayarı yok, ödeme kapalı; herkes Ücretsiz paketin sınırlarında")
+			} else if !strings.HasPrefix(cfg.SalesContractURL, "https://") || !strings.HasPrefix(cfg.PreInfoURL, "https://") {
+				// Ödeme alan işletmeci, alıcıya kendi satış sözleşmelerini göstermek zorunda.
+				log.Fatal("nabiz: ödeme açıkken NABIZ_SALES_CONTRACT_URL ve NABIZ_PRE_INFO_URL (https://) gerekli")
 			}
 		}
 		if err := serve(cfg, *addr, *data, useBilling, billingIyz, billingCodes); err != nil {

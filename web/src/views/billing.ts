@@ -4,7 +4,7 @@ import { api, type User } from "../api.ts";
 import { clear, h } from "../dom.ts";
 import { lang, locale, t, tryT } from "../i18n.ts";
 import { num } from "../format.ts";
-import { footer, header } from "../shell.ts";
+import { config, footer, header } from "../shell.ts";
 import { errText } from "./auth.ts";
 
 type Ctx = { rerender(): void; navigate(p: string): void };
@@ -205,8 +205,8 @@ export async function billingView(root: HTMLElement, user: User, ctx: Ctx) {
       address.wrap,
       h("div", { class: "grid2" }, city.wrap, country.wrap),
       h("label", { class: "check terms" }, accept, h("span", null, t("acceptTerms"), " ",
-        h("a", { href: "/legal/distance-sales", target: "_blank" }, t("salesContract")), ", ",
-        h("a", { href: "/legal/pre-information", target: "_blank" }, t("preInfo")))),
+        h("a", { href: config().sales_contract_url, target: "_blank", rel: "noopener" }, t("salesContract")), ", ",
+        h("a", { href: config().pre_info_url, target: "_blank", rel: "noopener" }, t("preInfo")))),
       err,
       submit,
     );
