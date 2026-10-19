@@ -71,4 +71,4 @@ _Yakında._
 
 ## Lisans
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE). Şirketiniz AGPL şartlarına uyamıyorsa (ör. kodu değiştirip değişiklikleri yayımlamak istemiyorsanız) ticari lisans mümkün: [iletişime geçin](https://www.miracdeprem.com/#contact).
