@@ -1,0 +1,213 @@
+/* Nabız paneli: hastane EKG kâğıdı. Kırmızı sadece canlılık ve tek birincil eylem için. */
+:root {
+  --paper: #fffaf8;
+  --grid-fine: #f5d3ce;
+  --grid-bold: #e8a79e;
+  --ink: #1d2b3f;
+  --heart: #c21f3a;
+  --pencil: #6e6662;
+  --bar: rgba(194, 31, 58, 0.09);
+  --raised: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1c1617;
+    --grid-fine: #2f2426;
+    --grid-bold: #5a4144;
+    --ink: #f2e7e4;
+    --heart: #ff6b7d;
+    --pencil: #a99d9a;
+    --bar: rgba(255, 107, 125, 0.12);
+    --raised: #241d1e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1c1617;
+  --grid-fine: #2f2426;
+  --grid-bold: #5a4144;
+  --ink: #f2e7e4;
+  --heart: #ff6b7d;
+  --pencil: #a99d9a;
+  --bar: rgba(255, 107, 125, 0.12);
+  --raised: #241d1e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Atkinson Hyperlegible Next Variable", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+a { color: inherit; text-decoration-color: var(--grid-bold); text-underline-offset: 3px; }
+button, select, input { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--heart); outline-offset: 2px; border-radius: 3px; }
+[hidden] { display: none !important; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 20px; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.wrap.narrow { max-width: 560px; padding-top: 48px; padding-bottom: 32px; }
+.muted { color: var(--pencil); }
+
+/* Üst çubuk */
+.top { border-bottom: 1px solid var(--grid-bold); }
+.top .wrap { display: flex; align-items: center; gap: 16px; min-height: 64px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; text-decoration: none; }
+.brand svg { width: 30px; height: 18px; }
+.brand polyline { fill: none; stroke: var(--heart); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.site-name { font-weight: 600; }
+.spacer { flex: 1; }
+select {
+  appearance: none;
+  background: var(--paper) url("/select.svg") no-repeat right 12px center;
+  border: 1px solid var(--grid-bold);
+  border-radius: 6px;
+  padding: 7px 32px 7px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.site-picker { border-color: transparent; }
+.site-picker:hover { border-color: var(--grid-bold); }
+.custom-range { display: flex; gap: 6px; align-items: center; }
+.custom-range input { border: 1px solid var(--grid-bold); border-radius: 6px; padding: 5px 8px; background: var(--paper); }
+.lang { font-weight: 600; color: var(--pencil); padding: 6px 4px; }
+.lang b { color: var(--ink); }
+.icon-btn { width: 34px; height: 34px; border-radius: 6px; display: grid; place-items: center; }
+.icon-btn:hover, .text-btn:hover { background: var(--bar); }
+.theme-glyph { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.text-btn { font-weight: 600; padding: 6px 8px; border-radius: 6px; text-decoration: none; }
+
+/* Nabız şeridi */
+.strip {
+  position: relative;
+  height: 132px;
+  border-bottom: 1px solid var(--grid-bold);
+  background-image:
+    linear-gradient(var(--grid-bold) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-bold) 1px, transparent 1px),
+    linear-gradient(var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+  background-position: -1px -1px;
+  overflow: hidden;
+}
+.ecg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ecg .trace { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.ecg .pen { fill: var(--heart); }
+.live {
+  position: absolute; left: 24px; top: 18px;
+  background: var(--paper);
+  padding: 6px 12px 6px 10px;
+  border-radius: 6px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.live .n { font-size: 34px; font-weight: 800; line-height: 1; color: var(--heart); }
+.live .t { font-weight: 600; }
+.strip-note { position: absolute; right: 24px; bottom: 10px; background: var(--paper); padding: 2px 8px; border-radius: 4px; font-size: 13px; color: var(--pencil); }
+
+/* Ölçüler */
+.vitals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 28px; }
+.vital { min-width: 0; text-align: left; padding: 6px 0 14px; border-bottom: 3px solid transparent; display: block; }
+.vital .label { display: block; font-size: 15px; color: var(--pencil); font-weight: 500; }
+.vital .row { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; margin-top: 2px; }
+.vital .value { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+.vital .delta { font-size: 15px; font-weight: 600; color: var(--pencil); }
+.vital .delta.up { color: var(--ink); }
+.vital[aria-pressed="true"] { border-bottom-color: var(--heart); }
+.vital[aria-pressed="true"] .label { color: var(--ink); }
+.vital:hover:not([aria-pressed="true"]) { border-bottom-color: var(--grid-bold); }
+
+/* Grafik */
+.chart { border-top: 1px solid var(--grid-bold); padding-top: 18px; }
+.chart-box { position: relative; }
+.chart-svg { width: 100%; height: 280px; display: block; overflow: visible; touch-action: pan-y; }
+.chart-svg .grid-fine { stroke: var(--grid-fine); }
+.chart-svg .grid-bold { stroke: var(--grid-bold); }
+.chart-svg .cur { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-svg .prev { fill: none; stroke: var(--pencil); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.chart-svg .axis { fill: var(--pencil); font-size: 13px; }
+.chart-svg .dot { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; }
+.chart-svg .guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+.tip {
+  position: absolute; left: 0; top: 0; pointer-events: none;
+  background: var(--ink); color: var(--paper);
+  padding: 4px 10px; border-radius: 5px; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.legend { display: flex; gap: 22px; font-size: 14px; color: var(--pencil); margin-top: 10px; }
+.legend span::before { content: ""; display: inline-block; width: 22px; vertical-align: middle; margin-right: 8px; border-top: 2.5px solid var(--ink); }
+.legend span.p::before { border-top: 1.5px dashed var(--pencil); }
+.notice { margin: 0 0 14px; padding: 10px 14px; border-radius: 6px; background: var(--bar); }
+
+/* Filtre satırı */
+.filterbar { display: flex; align-items: center; gap: 10px; margin: 26px 0 6px; flex-wrap: wrap; }
+.filterbar .lbl { color: var(--pencil); }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px; border-radius: 999px; background: var(--bar); font-weight: 600; }
+.chip button { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; }
+.chip button:hover { background: var(--heart); color: var(--paper); }
+
+/* Kırılım panelleri */
+.panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--grid-bold); margin-top: 20px; }
+.panel { padding: 22px 28px 26px 0; border-bottom: 1px solid var(--grid-bold); min-width: 0; }
+.panel:nth-child(2n) { padding: 22px 0 26px 28px; border-left: 1px solid var(--grid-bold); }
+.panel.wide { grid-column: 1 / -1; padding: 22px 0 26px; border-left: 0; }
+.panel[aria-busy="true"] .rows { opacity: 0.55; transition: opacity 0.2s 0.15s; }
+.panel-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+.panel h2 { font-size: 20px; font-weight: 700; margin: 0; }
+.tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.tabs button { padding: 3px 9px; border-radius: 5px; font-size: 14px; color: var(--pencil); font-weight: 600; }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--bar); }
+.cols { display: flex; justify-content: space-between; font-size: 13px; color: var(--pencil); padding: 0 8px 6px; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li { position: relative; }
+.rows li::before { content: ""; position: absolute; inset: 0; width: var(--w); background: var(--bar); border-radius: 4px; }
+.rows button { position: relative; width: 100%; display: flex; justify-content: space-between; gap: 16px; padding: 7px 8px; border-radius: 4px; text-align: left; }
+.rows button:hover { box-shadow: inset 0 0 0 1px var(--grid-bold); }
+.rows .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rows .n { font-weight: 700; }
+.rows .code { font-size: 12px; font-weight: 700; color: var(--pencil); margin-right: 8px; }
+.panel-status { color: var(--pencil); margin: 6px 8px; }
+.more { margin: 10px 8px 0; font-weight: 600; text-decoration: underline; text-decoration-color: var(--grid-bold); text-underline-offset: 3px; }
+
+/* Giriş */
+.login { display: grid; gap: 6px; }
+.login label { font-weight: 600; margin-top: 10px; }
+.login input { border: 1px solid var(--grid-bold); border-radius: 6px; padding: 10px 12px; background: var(--raised); }
+.primary { margin-top: 18px; justify-self: start; background: var(--heart); color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 6px; }
+.primary:disabled { opacity: 0.7; cursor: progress; }
+.form-error { color: var(--heart); font-weight: 600; margin: 8px 0 0; }
+
+/* Siteler */
+.site-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--grid-bold); }
+.site-list li { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 4px; border-bottom: 1px solid var(--grid-bold); }
+.site-list a { font-size: 20px; font-weight: 700; }
+
+.foot { margin-top: 40px; margin-bottom: 32px; font-size: 14px; color: var(--pencil); display: flex; gap: 18px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 16px; }
+  .top .wrap { flex-wrap: wrap; gap: 8px 10px; padding-top: 10px; padding-bottom: 10px; }
+  .spacer { display: none; }
+  .site-picker, .site-name { order: 3; flex: 1 1 50%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .period { order: 4; margin-left: auto; }
+  .custom-range { order: 5; width: 100%; }
+  .lang { margin-left: auto; }
+  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 8px; column-gap: 16px; }
+  .vital .value { font-size: 28px; }
+  .panels { grid-template-columns: minmax(0, 1fr); }
+  .panel, .panel:nth-child(2n) { padding: 20px 0; border-left: 0; }
+  .live { left: 16px; }
+  .live .n { font-size: 28px; }
+  .strip-note { left: 16px; right: auto; }
+  .chart-svg { height: 220px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

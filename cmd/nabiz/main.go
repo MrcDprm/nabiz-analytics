@@ -93,7 +93,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "nabiz: -mode selfhost ya da cloud olmalı")
 			os.Exit(2)
 		}
-		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker()}
+		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker(), Web: web.Files()}
 		if err := serve(cfg, *addr, *data); err != nil {
 			log.Fatalf("nabiz: %v", err)
 		}
@@ -153,6 +153,9 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	locator, err := geo.Open(geoPath(dataDir))
 	if err != nil {
 		return err
+	}
+	if cfg.Web == nil {
+		log.Print("nabiz: panel derlenmemiş, sadece API çalışıyor (cd web && npm run build)")
 	}
 	if cfg.Tracker == nil {
 		log.Print("nabiz: takip betiği derlenmemiş, /js/nabiz.js 404 dönecek (cd web && npm run build)")

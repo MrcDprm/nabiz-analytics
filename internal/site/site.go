@@ -117,3 +117,28 @@ func Role(ctx context.Context, db *sql.DB, siteID string, userID int64) (string,
 	}
 	return role, err
 }
+
+// Membership, kullanıcının bir sitedeki yeri.
+type Membership struct {
+	Site
+	Role string
+}
+
+// ForUser kullanıcının üyesi olduğu siteleri alan adına göre sıralı döndürür.
+func ForUser(ctx context.Context, db *sql.DB, userID int64) ([]Membership, error) {
+	rows, err := db.QueryContext(ctx, `SELECT s.id, s.domain, s.public, m.role FROM memberships m
+		JOIN sites s ON s.id = m.site_id WHERE m.user_id = ? ORDER BY s.domain`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Membership{}
+	for rows.Next() {
+		var m Membership
+		if err := rows.Scan(&m.ID, &m.Domain, &m.Public, &m.Role); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}

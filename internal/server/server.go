@@ -4,6 +4,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
 	"log"
 	"net/http"
 	"time"
@@ -27,6 +28,7 @@ type Config struct {
 	TrustProxy bool // Caddy arkasında: istemci IP'si X-Forwarded-For'dan okunur
 	Version    string
 	Tracker    []byte // derlenmiş nabiz.js; nil ise /js/nabiz.js 404 döner
+	Web        fs.FS  // derlenmiş panel (web/dist); nil ise sadece API çalışır
 }
 
 type Server struct {
@@ -61,11 +63,13 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("POST /api/login", s.login)
 	s.mux.HandleFunc("POST /api/logout", s.logout)
 	s.mux.HandleFunc("GET /api/me", s.requireUser(s.me))
+	s.mux.HandleFunc("GET /api/sites", s.requireUser(s.listSites))
 
 	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
 	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
 	s.mux.HandleFunc("GET /api/stats/{domain}/breakdown", s.statsBreakdown)
 	s.mux.HandleFunc("GET /api/stats/{domain}/live", s.statsLive)
+	s.webRoutes()
 	return s
 }
 

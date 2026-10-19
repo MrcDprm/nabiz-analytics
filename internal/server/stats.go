@@ -109,7 +109,19 @@ func (s *Server) statsTimeseries(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "stats seri", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"range": toRangeJSON(q.Range), "points": points})
+	out := map[string]any{"range": toRangeJSON(q.Range), "points": points}
+	// compare=1: önceki dönemin çubukları da (grafikteki kesikli çizgi).
+	if r.URL.Query().Get("compare") == "1" {
+		pq := q
+		pq.Range.From, pq.Range.To = q.Range.PrevFrom, q.Range.PrevTo
+		prev, err := stats.GetTimeseries(r.Context(), s.store.R, pq)
+		if err != nil {
+			internalError(w, "stats önceki seri", err)
+			return
+		}
+		out["previous"] = prev
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) statsBreakdown(w http.ResponseWriter, r *http.Request) {

@@ -3,11 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "check": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build && npm run build:tracker",
     "build:tracker": "esbuild tracker/nabiz.js --minify --target=es2017 --outfile=dist/nabiz.js",
-    "build": "npm run build:tracker",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\" \"test/*.test.ts\""
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "@types/node": "24.19.2",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0"
   }
 }
