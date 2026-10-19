@@ -68,6 +68,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "login", err)
 		return
 	}
+	setSessionCookie(w, token)
+	writeJSON(w, http.StatusOK, toJSON(u))
+}
+
+func setSessionCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    token,
@@ -77,7 +82,6 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode, // başka sitelerden gelen isteklere eklenmez
 	})
-	writeJSON(w, http.StatusOK, toJSON(u))
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

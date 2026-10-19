@@ -13,6 +13,7 @@ import (
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/mail"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
+	"github.com/MrcDprm/nabiz-analytics/internal/team"
 )
 
 // Mode sunucunun nasıl çalıştığını seçer: kendi sunucunda (paket yok) ya da
@@ -40,6 +41,7 @@ type Server struct {
 	store    *store.Store
 	recorder *ingest.Recorder
 	auth     *auth.Service
+	team     *team.Team
 	mux      *http.ServeMux
 	csrf     *http.CrossOriginProtection
 
@@ -58,7 +60,7 @@ type Server struct {
 
 func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Server {
 	s := &Server{
-		cfg: cfg, store: st, recorder: rec, auth: a, mux: http.NewServeMux(),
+		cfg: cfg, store: st, recorder: rec, auth: a, team: team.New(st, nil), mux: http.NewServeMux(),
 		csrf:         http.NewCrossOriginProtection(),
 		eventLimit:   newLimiter(20, 60, nil),
 		loginLimit:   newLimiter(5.0/60, 5, nil),
@@ -96,6 +98,14 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("GET /api/sites/{id}/funnels", s.requireUser(s.listFunnels))
 	s.mux.HandleFunc("POST /api/sites/{id}/funnels", s.requireUser(s.addFunnel))
 	s.mux.HandleFunc("DELETE /api/sites/{id}/funnels/{funnel}", s.requireUser(s.deleteFunnel))
+	s.mux.HandleFunc("GET /api/sites/{id}/members", s.requireUser(s.listMembers))
+	s.mux.HandleFunc("POST /api/sites/{id}/invites", s.requireUser(s.invite))
+	s.mux.HandleFunc("DELETE /api/sites/{id}/invites/{email}", s.requireUser(s.revokeInvite))
+	s.mux.HandleFunc("PATCH /api/sites/{id}/members/{email}", s.requireUser(s.setMemberRole))
+	s.mux.HandleFunc("DELETE /api/sites/{id}/members/{email}", s.requireUser(s.removeMember))
+	s.mux.HandleFunc("POST /api/sites/{id}/transfer", s.requireUser(s.transferSite))
+	s.mux.HandleFunc("POST /api/invites/info", s.inviteInfo)
+	s.mux.HandleFunc("POST /api/invites/accept", s.acceptInvite)
 
 	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
 	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
@@ -125,6 +135,9 @@ func (s *Server) Run(ctx context.Context) {
 			s.accountLimit.sweep()
 			if err := s.auth.SweepTokens(ctx); err != nil {
 				log.Printf("token temizliği: %v", err)
+			}
+			if err := s.team.Sweep(ctx); err != nil {
+				log.Printf("davet temizliği: %v", err)
 			}
 			if err := s.auth.Sweep(ctx); err != nil {
 				log.Printf("oturum temizliği: %v", err)

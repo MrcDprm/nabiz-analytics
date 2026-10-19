@@ -34,7 +34,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
   }
   const mine = sites.find((st) => st.domain === domain);
   const canEdit = !!mine && (mine.role === "owner" || mine.role === "admin");
-  if (canEdit) {
+  if (mine) {
     middle.push(h("a", { class: "text-btn", href: `/settings/${domain}` }, t("settings")));
   }
 

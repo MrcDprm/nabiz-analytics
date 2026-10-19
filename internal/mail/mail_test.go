@@ -41,6 +41,17 @@ func TestBuildRejectsHeaderInjection(t *testing.T) {
 	}
 }
 
+func TestRenderInvite(t *testing.T) {
+	sub, body := Render("tr", Invite, "https://n.example.com/invite?token=x", "a.com", "izleyici")
+	if sub != "Nabız: a.com sitesine davet edildin" || !strings.Contains(body, "a.com sitesinin Nabız paneline izleyici olarak") || strings.Contains(body, "EXTRA") {
+		t.Fatalf("%q\n%s", sub, body)
+	}
+	// Ek değer kullanmayan şablonlarda fazladan değer metni bozmamalı.
+	if _, body := Render("en", Verify, "x", "fazla"); strings.Contains(body, "EXTRA") {
+		t.Fatalf("fazla değer: %s", body)
+	}
+}
+
 func TestRender(t *testing.T) {
 	sub, body := Render("tr", Reset, "https://nabiz.example.com/reset?token=abc")
 	if sub != "Nabız şifreni sıfırla" || !strings.Contains(body, "https://nabiz.example.com/reset?token=abc") || !strings.Contains(body, "1 saat") {
@@ -50,7 +61,7 @@ func TestRender(t *testing.T) {
 		t.Fatalf("bilinmeyen dil: %q", sub)
 	}
 	for lang, kinds := range templates {
-		for _, k := range []Kind{Verify, Reset, EmailChange, AlreadyTaken} {
+		for _, k := range []Kind{Verify, Reset, EmailChange, AlreadyTaken, Invite} {
 			if kinds[k].subject == "" || !strings.Contains(kinds[k].body, "%[1]s") {
 				t.Errorf("%s/%s şablonu eksik", lang, k)
 			}

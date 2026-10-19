@@ -18,6 +18,13 @@ const en: Record<string, string> = {
   "bir sitede en fazla 20 hedef olabilir": "A site can have at most 20 goals.",
   "bir sitede en fazla 10 huni olabilir": "A site can have at most 10 funnels.",
   "bu işlem için yetkiniz yok": "You don't have permission for this.",
+  "rol yönetici ya da izleyici olmalı": "Role must be admin or viewer.",
+  "bu kişi zaten sitenin üyesi": "This person is already a member.",
+  "bu kişi sitenin üyesi değil": "This person isn't a member.",
+  "sahibin rolü değiştirilemez; önce sahipliği devret": "The owner's role can't change; transfer ownership first.",
+  "davet geçersiz ya da süresi dolmuş": "This invite is invalid or has expired.",
+  "bu davet başka bir e-posta adresine gönderildi": "This invite was sent to another email address.",
+  "sahiplik zaten sende": "You already own this site.",
 };
 
 export function serverMessage(msg: string, lang: "tr" | "en"): string | null {
