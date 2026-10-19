@@ -146,6 +146,8 @@ const tr = {
   "col.value": "Değer",
   noProps: "Bu olayın özelliği yok. nabiz(\"Ad\", { props: { anahtar: \"değer\" } }) ile gönderebilirsin.",
   showProps: "Özelliklerini gör",
+  exportCsv: "CSV indir",
+  exportHelp: "Seçili dönem ve filtrelerle bütün listeler, tek ZIP dosyası",
 };
 
 type Key = keyof typeof tr;
@@ -294,6 +296,8 @@ const en: Record<Key, string> = {
   "col.value": "Value",
   noProps: "This event has no properties. Send them with nabiz(\"Name\", { props: { key: \"value\" } }).",
   showProps: "See its properties",
+  exportCsv: "Download CSV",
+  exportHelp: "Every list for the selected period and filters, in one ZIP file",
 };
 
 const dict: Record<Lang, Record<Key, string>> = { tr, en };

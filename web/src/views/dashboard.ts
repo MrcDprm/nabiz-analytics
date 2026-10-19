@@ -97,8 +97,11 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
   const tooltip = h("div", { class: "tip", hidden: true });
   const legendCur = h("span");
   const legendPrev = h("span", { class: "p" });
+  // CSV: sadece site üyeleri (herkese açık panelde ziyaretçiler indiremez; sunucu da kontrol eder).
+  const exportLink = mine ? h("a", { class: "export", download: "", title: t("exportHelp") }, t("exportCsv")) : null;
+  const setExportHref = () => exportLink?.setAttribute("href", `${base}/export?${apiQuery(state, tz, { lang })}`);
   const notice = h("p", { class: "notice", hidden: true }, t("noData"));
-  const chart = h("section", { class: "chart" }, notice, h("div", { class: "chart-box" }, chartSvg, tooltip), h("div", { class: "legend" }, legendCur, legendPrev));
+  const chart = h("section", { class: "chart" }, notice, h("div", { class: "chart-box" }, chartSvg, tooltip), h("div", { class: "legend" }, legendCur, legendPrev, exportLink));
   let lastSeries: Timeseries | null = null;
   let lastPrev: Timeseries["points"] | null = null;
 
@@ -298,6 +301,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
 
   async function loadAll() {
     renderFilters();
+    setExportHref();
     loadCtrl?.abort();
     loadCtrl = new AbortController();
     const signal = loadCtrl.signal;
