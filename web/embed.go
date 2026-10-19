@@ -2,7 +2,10 @@
 // gömer; sunucu tek dosya olarak dağıtılır.
 package web
 
-import "embed"
+import (
+	"embed"
+	"io/fs"
+)
 
 // dist her zaman .gitkeep içerir; arayüz derlenmeden de Go derlenebilsin.
 //
@@ -16,4 +19,16 @@ func Tracker() []byte {
 		return nil
 	}
 	return b
+}
+
+// Files derlenmiş paneli döndürür; panel derlenmemişse nil (sunucu sadece API sunar).
+func Files() fs.FS {
+	sub, err := fs.Sub(dist, "dist")
+	if err != nil {
+		return nil
+	}
+	if _, err := fs.Stat(sub, "index.html"); err != nil {
+		return nil
+	}
+	return sub
 }
