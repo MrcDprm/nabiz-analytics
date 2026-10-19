@@ -176,6 +176,9 @@ select {
 .panel-status { color: var(--pencil); margin: 6px 8px; }
 .row-static { position: relative; display: flex; justify-content: space-between; gap: 16px; padding: 7px 8px; }
 .rows .n .muted { font-weight: 500; margin-right: 6px; }
+.rows .drop { font-weight: 500; margin-left: 8px; }
+ol.rows { counter-reset: none; }
+.panel-head .text-btn { padding: 2px 6px; font-size: 14px; }
 .more { margin: 10px 8px 0; font-weight: 600; text-decoration: underline; text-decoration-color: var(--grid-bold); text-underline-offset: 3px; }
 
 /* Giriş */
@@ -217,6 +220,11 @@ input:not([type="checkbox"]) { border: 1px solid var(--grid-bold); border-radius
 .goal-list .kind { font-size: 13px; font-weight: 700; color: var(--pencil); min-width: 48px; }
 .goal-list .v { flex: 1; overflow-wrap: anywhere; }
 .goal-form select { padding-top: 9px; padding-bottom: 9px; }
+.goal-list .steps { display: block; margin-top: 2px; }
+.funnel-form { display: grid; gap: 10px; margin-top: 12px; }
+.step-list { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.step-list li::marker { color: var(--pencil); font-weight: 700; }
+.funnel-form .primary { margin-top: 0; margin-left: auto; }
 .danger { background: transparent; color: var(--heart); border: 1.5px solid var(--heart); font-weight: 700; padding: 9px 16px; border-radius: 6px; }
 .danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .danger:not(:disabled):hover { background: var(--heart); color: #fff; }

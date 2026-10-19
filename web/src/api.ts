@@ -48,3 +48,7 @@ export type Breakdown = { property: string; rows: Row[] };
 export type Live = { visitors: number; beats: number[] };
 export type Goal = { id: string; kind: "page" | "event"; value: string };
 export type GoalResult = Goal & { visitors: number; count: number; rate: number };
+export type Step = { kind: "page" | "event"; value: string };
+export type Funnel = { id: string; name: string; steps: Step[] };
+export type StepResult = Step & { visitors: number; rate: number; drop: number };
+export type FunnelStats = { funnels: Funnel[]; selected?: string; steps?: StepResult[] };

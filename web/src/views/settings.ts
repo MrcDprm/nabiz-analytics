@@ -1,5 +1,5 @@
 // Site ayarları: herkese açık panel, kurulum satırı, hedefler ve siteyi silme.
-import { api, ApiError, type Goal, type Site, type User } from "../api.ts";
+import { api, ApiError, type Funnel, type Goal, type Site, type User } from "../api.ts";
 import { clear, h } from "../dom.ts";
 import { t } from "../i18n.ts";
 import { footer, header } from "../shell.ts";
@@ -90,6 +90,85 @@ export async function settingsView(root: HTMLElement, site: Site, user: User, ct
     }
   });
 
+  // --- Huniler ---
+  const funnelList = h("ul", { class: "goal-list" });
+  const funnelError = h("p", { class: "form-error", role: "alert", hidden: true });
+  async function loadFunnels() {
+    const { funnels } = await api<{ funnels: Funnel[] }>(`/api/sites/${site.id}/funnels`);
+    clear(funnelList);
+    if (!funnels.length) funnelList.append(h("li", { class: "muted" }, t("noFunnels")));
+    for (const f of funnels) {
+      funnelList.append(
+        h(
+          "li",
+          null,
+          h("span", { class: "v" }, h("b", null, f.name), h("span", { class: "muted small steps" }, f.steps.map((s) => s.value).join("  ›  "))),
+          canEdit
+            ? h("button", {
+                type: "button",
+                class: "text-btn",
+                "aria-label": `${t("deleteFunnel")}: ${f.name}`,
+                onclick: async () => {
+                  try {
+                    await api(`/api/sites/${site.id}/funnels/${f.id}`, { method: "DELETE" });
+                    loadFunnels();
+                  } catch (e) {
+                    funnelError.hidden = false;
+                    funnelError.textContent = errText(e);
+                  }
+                },
+              }, "✕")
+            : null,
+        ),
+      );
+    }
+  }
+  // Huni oluşturucu: ad + 2-8 adım (her adım sayfa ya da olay).
+  const funnelName = h("input", { "aria-label": t("funnelName"), placeholder: t("funnelName"), required: true, maxlength: 64 });
+  const stepsBox = h("ol", { class: "step-list" });
+  const addStepBtn = h("button", { type: "button", class: "text-btn" }, t("addStep"));
+  function addStep(kindValue = "page", value = "") {
+    const kindSel = h("select", { "aria-label": t("stepLabel") }, h("option", { value: "page" }, t("goalKindPage")), h("option", { value: "event" }, t("goalKindEvent")));
+    kindSel.value = kindValue;
+    const input = h("input", { "aria-label": t("goalValue"), placeholder: kindValue === "page" ? "/projects" : "CV indir", value, required: true });
+    kindSel.addEventListener("change", () => (input.placeholder = kindSel.value === "page" ? "/projects" : "CV indir"));
+    const li = h("li", { class: "inline" }, kindSel, input);
+    li.append(h("button", {
+      type: "button",
+      class: "text-btn",
+      "aria-label": t("removeStep"),
+      onclick: () => {
+        if (stepsBox.children.length > 2) li.remove();
+        addStepBtn.hidden = stepsBox.children.length >= 8;
+      },
+    }, "✕"));
+    stepsBox.append(li);
+    addStepBtn.hidden = stepsBox.children.length >= 8;
+  }
+  addStepBtn.addEventListener("click", () => addStep());
+  addStep();
+  addStep();
+  const funnelForm = h("form", { class: "funnel-form", hidden: !canEdit }, funnelName, stepsBox, h("div", { class: "inline" }, addStepBtn, h("button", { type: "submit", class: "primary" }, t("saveFunnel"))));
+  funnelForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    funnelError.hidden = true;
+    const steps = [...stepsBox.children].map((li) => ({
+      kind: (li.querySelector("select") as HTMLSelectElement).value,
+      value: (li.querySelector("input") as HTMLInputElement).value,
+    }));
+    try {
+      await api(`/api/sites/${site.id}/funnels`, { method: "POST", body: { name: funnelName.value, steps } });
+      funnelName.value = "";
+      clear(stepsBox);
+      addStep();
+      addStep();
+      loadFunnels();
+    } catch (err) {
+      funnelError.hidden = false;
+      funnelError.textContent = errText(err);
+    }
+  });
+
   // --- Silme (sadece sahip) ---
   let danger: HTMLElement | null = null;
   if (site.role === "owner") {
@@ -128,10 +207,15 @@ export async function settingsView(root: HTMLElement, site: Site, user: User, ct
         publicStatus,
       ),
       h("section", { class: "settings-block" }, h("h2", null, t("goals")), h("p", { class: "muted small" }, t("goalsHelp")), goalList, goalForm, goalError),
+      h("section", { class: "settings-block" }, h("h2", null, t("funnels")), h("p", { class: "muted small" }, t("funnelsHelp")), funnelList, funnelForm, funnelError),
       danger,
     ),
     footer(),
   );
+  loadFunnels().catch((e) => {
+    funnelError.hidden = false;
+    funnelError.textContent = errText(e);
+  });
   loadGoals().catch((e) => {
     goalError.hidden = false;
     goalError.textContent = errText(e);
