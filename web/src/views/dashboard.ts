@@ -1,5 +1,5 @@
 // Bir sitenin paneli: nabız şeridi, ölçüler, zaman grafiği, filtreler ve kırılımlar.
-import { api, ApiError, type Breakdown, type GoalResult, type Live, type Metrics, type Site, type Summary, type Timeseries, type User } from "../api.ts";
+import { api, ApiError, type Breakdown, type FunnelStats, type GoalResult, type Live, type Metrics, type Site, type Summary, type Timeseries, type User } from "../api.ts";
 import { clear, h, s } from "../dom.ts";
 import { changePercent, changePoints, changeSeconds, compact, duration, num, percent, type Delta } from "../format.ts";
 import { lang, locale, t, tryT } from "../i18n.ts";
@@ -8,6 +8,8 @@ import { apiQuery, parseState, periods, stateSearch, withFilter, withoutFilter, 
 import { createPanel } from "../components/breakdown.ts";
 import { drawChart } from "../components/chart.ts";
 import { createStrip } from "../components/strip.ts";
+import { createEventsPanel } from "../components/events.ts";
+import { createFunnelPanel } from "../components/funnel.ts";
 
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 const LIVE_EVERY = 15_000;
@@ -30,7 +32,8 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     middle.push(h("span", { class: "site-name" }, domain));
   }
   const mine = sites.find((st) => st.domain === domain);
-  if (mine && (mine.role === "owner" || mine.role === "admin")) {
+  const canEdit = !!mine && (mine.role === "owner" || mine.role === "admin");
+  if (canEdit) {
     middle.push(h("a", { class: "text-btn", href: `/settings/${domain}` }, t("settings")));
   }
 
@@ -151,8 +154,22 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     createPanel({ title: t("sources"), tabs: tabs(["source", "utm_source", "utm_medium", "utm_campaign"]), column: () => t("col.source"), label: valueLabel, count, load, onPick: pick }),
     createPanel({ title: t("countries"), tabs: [{ prop: "country", label: t("countries") }], column: () => t("col.country"), label: valueLabel, count, load, onPick: pick }),
     createPanel({ title: t("devices"), tabs: tabs(["device", "browser", "os"]), column: () => t("col.device"), label: valueLabel, count, load, onPick: pick }),
-    createPanel({ title: t("events"), tabs: [{ prop: "event", label: t("events") }], column: () => t("col.event"), label: valueLabel, count, load, onPick: pick, emptyText: t("emptyEvents") }),
   ];
+
+  // Olaylar: bir olaya tıklayınca özellikleri (props) açılır.
+  const events = createEventsPanel({
+    loadEvents: (signal) => load("event", 20, signal),
+    loadKeys: (event, signal) => api<{ rows: Breakdown["rows"] }>(`${base}/props?${apiQuery(state, tz, { event })}`, { signal }).then((r) => r.rows),
+    loadValues: (event, key, signal) =>
+      api<{ rows: Breakdown["rows"] }>(`${base}/props?${apiQuery(state, tz, { event, key, limit: "20" })}`, { signal }).then((r) => r.rows),
+    count,
+    onFilter: (event) => update(withFilter(state, ["event", event])),
+  });
+
+  const funnel = createFunnelPanel({
+    load: (id, signal) => api<FunnelStats>(`${base}/funnels?${apiQuery(state, tz, id ? { id } : {})}`, { signal }),
+    settingsHref: canEdit ? `/settings/${domain}` : null,
+  });
 
   // --- Hedefler: ulaşan kişi ve dönüşüm oranı ---
   const goalRows = h("ul", { class: "rows" });
@@ -200,7 +217,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     vitals,
     chart,
     filterBar,
-    h("div", { class: "panels" }, ...panels.slice(0, 4).map((p) => p.el), goalsPanel, panels[4]!.el),
+    h("div", { class: "panels" }, ...panels.map((p) => p.el), goalsPanel, events.el, funnel.el),
   );
   root.replaceChildren(
     header({ user, middle, right: [periodSel, custom], rerender: ctx.rerender, navigate: ctx.navigate }),
@@ -286,6 +303,8 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     const signal = loadCtrl.signal;
     for (const p of panels) p.refresh();
     loadGoals(signal);
+    events.refresh();
+    funnel.refresh();
     try {
       const [sum, series] = await Promise.all([
         api<Summary>(`${base}/summary?${apiQuery(state, tz)}`, { signal }),
