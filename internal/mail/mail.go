@@ -13,6 +13,7 @@ import (
 	"mime"
 	"mime/quotedprintable"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"os"
 	"strconv"
@@ -40,6 +41,7 @@ func (LogSender) Send(_ context.Context, to, subject, body string) error {
 type SMTP struct {
 	Host, User, Pass, From string
 	Port                   int
+	fromAddr               string // zarftaki (MAIL FROM) çıplak adres
 }
 
 // FromEnv: NABIZ_SMTP_HOST, NABIZ_SMTP_PORT (587 ya da 465), NABIZ_SMTP_USER,
@@ -53,10 +55,14 @@ func FromEnv() (*SMTP, error) {
 	if err != nil || (port != 587 && port != 465 && port != 25 && port != 2525) {
 		return nil, errors.New("NABIZ_SMTP_PORT 587, 465, 2525 ya da 25 olmalı")
 	}
-	s := &SMTP{Host: host, Port: port, User: os.Getenv("NABIZ_SMTP_USER"), Pass: os.Getenv("NABIZ_SMTP_PASS"), From: os.Getenv("NABIZ_SMTP_FROM")}
-	if s.From == "" || strings.ContainsAny(s.From, "\r\n") {
+	s := &SMTP{Host: host, Port: port, User: os.Getenv("NABIZ_SMTP_USER"), Pass: os.Getenv("NABIZ_SMTP_PASS")}
+	from, err := mail.ParseAddress(os.Getenv("NABIZ_SMTP_FROM"))
+	if err != nil {
 		return nil, errors.New("NABIZ_SMTP_FROM gerekli (ör. Nabız <bildirim@example.com>)")
 	}
+	// String(), Türkçe harfli adı başlığa uygun biçimde kodlar (=?utf-8?q?Nab=C4=B1z?=);
+	// yoksa bazı e-posta programlarında ad bozuk görünür.
+	s.From, s.fromAddr = from.String(), from.Address
 	return s, nil
 }
 
@@ -126,11 +132,7 @@ func (s *SMTP) Send(ctx context.Context, to, subject, body string) error {
 			return err
 		}
 	}
-	fromAddr := s.From
-	if i := strings.LastIndex(fromAddr, "<"); i >= 0 {
-		fromAddr = strings.TrimSuffix(fromAddr[i+1:], ">")
-	}
-	if err := c.Mail(fromAddr); err != nil {
+	if err := c.Mail(s.fromAddr); err != nil {
 		return err
 	}
 	if err := c.Rcpt(to); err != nil {

@@ -30,6 +30,29 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestFromEnvEncodesName(t *testing.T) {
+	t.Setenv("NABIZ_SMTP_HOST", "smtp.example.com")
+	t.Setenv("NABIZ_SMTP_PORT", "465")
+	t.Setenv("NABIZ_SMTP_FROM", "Nabız <nabiz@miracdeprem.com>")
+	s, err := FromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.From != "=?utf-8?q?Nab=C4=B1z?= <nabiz@miracdeprem.com>" || s.fromAddr != "nabiz@miracdeprem.com" {
+		t.Fatalf("From = %q, adres = %q", s.From, s.fromAddr)
+	}
+	for _, bad := range []string{"", "adres-degil", "a@b.com\r\nBcc: x@y.com"} {
+		t.Setenv("NABIZ_SMTP_FROM", bad)
+		if _, err := FromEnv(); err == nil {
+			t.Errorf("%q kabul edildi", bad)
+		}
+	}
+	t.Setenv("NABIZ_SMTP_HOST", "")
+	if s, err := FromEnv(); s != nil || err != nil {
+		t.Fatalf("SMTP yokken = %v %v", s, err)
+	}
+}
+
 func TestBuildRejectsHeaderInjection(t *testing.T) {
 	for _, to := range []string{"ali@example.com\r\nBcc: herkes@example.com", "a@b.com\nX: y"} {
 		if _, err := Build("n@example.com", to, "Konu", "gövde", time.Now()); err == nil {
