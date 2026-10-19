@@ -4,6 +4,7 @@ package site
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -92,4 +93,27 @@ func Create(ctx context.Context, st *store.Store, domain string, ownerID int64) 
 		return nil, err
 	}
 	return &Site{ID: id, Domain: domain}, tx.Commit()
+}
+
+var ErrNotFound = errors.New("site bulunamadı")
+
+// ByDomain siteyi alan adıyla bulur.
+func ByDomain(ctx context.Context, db *sql.DB, domain string) (*Site, error) {
+	s := &Site{}
+	err := db.QueryRowContext(ctx, `SELECT id, domain, public FROM sites WHERE domain = ?`, strings.ToLower(domain)).
+		Scan(&s.ID, &s.Domain, &s.Public)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return s, err
+}
+
+// Role kullanıcının sitedeki rolünü döndürür; üye değilse boş.
+func Role(ctx context.Context, db *sql.DB, siteID string, userID int64) (string, error) {
+	var role string
+	err := db.QueryRowContext(ctx, `SELECT role FROM memberships WHERE site_id = ? AND user_id = ?`, siteID, userID).Scan(&role)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return role, err
 }

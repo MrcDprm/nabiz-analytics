@@ -118,8 +118,8 @@ func (r *Recorder) Record(ctx context.Context, e *Event, ip, userAgent string) e
 		}
 	}
 
-	res, err := tx.ExecContext(ctx, `INSERT INTO events (site_id, ts, session_id, name, pathname) VALUES (?, ?, ?, ?, ?)`,
-		siteID, ts, sessionID, e.Name, e.Path)
+	res, err := tx.ExecContext(ctx, `INSERT INTO events (site_id, ts, session_id, visitor, name, pathname) VALUES (?, ?, ?, ?, ?, ?)`,
+		siteID, ts, sessionID, visitor, e.Name, e.Path)
 	if err != nil {
 		return err
 	}

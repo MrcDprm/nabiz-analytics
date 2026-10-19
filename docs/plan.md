@@ -93,7 +93,14 @@ webhook_log   (event_id TEXT PK, received_at)                    -- aynı webhoo
 -- indeksler: events(site_id, ts), sessions(site_id, started_at), event_props(site_id, key, value)
 ```
 
-Önceki notta "ham olay + saatlik özet tablolar" yazıyordu. Değişiklik: sorgular `events` + `sessions` üstünden çalışır, çünkü tıkla-süz her boyut kombinasyonunu ister ve özet tablolar bunu karşılamaz. 1 milyon sahte olayla benchmark yapılır; panel sorgusu 300 ms'yi geçerse filtresiz ana grafik için saatlik özet eklenir.
+Önceki notta "ham olay + saatlik özet tablolar" yazıyordu. Değişiklik: sorgular `events` + `sessions` üstünden çalışır, çünkü tıkla-süz her boyut kombinasyonunu ister ve özet tablolar bunu karşılamaz.
+
+Benchmark (adım 6, i7-10750H; tek sitede 30 güne yayılmış 1 milyon olay, ~320 bin ziyaret; `go test -run x -bench . ./internal/stats`): ilk hâlinde zaman serisi 2,3 s, sayfa filtresi 3,7 s, sayfa listesi 1,5 s'ydi. Üç düzeltme yapıldı, özet tabloya gerek kalmadı:
+- Kapsayıcı indeksler: `sessions (site_id, started_at, visitor, pageviews, ended_at)`, `events (site_id, ts, name, pathname, visitor)` ve sayfa sırasına göre `events (site_id, name, pathname, ts, visitor)`; `events.visitor` sütunu sayfa sorgularını join'den kurtarır.
+- Görüntüleme sayısı ziyaret satırındaki `pageviews` toplamından; sayfa/olay filtresi `EXISTS` yerine `IN (aralıktaki eşleşen olayların ziyaretleri)`.
+- `uniq(x)`: `COUNT(DISTINCT x)` yerine Go map'iyle sayan SQLite fonksiyonu (internal/store/uniq.go), ~3 kat hızlı.
+
+Sonuç: özet 150 ms, ülke filtresi 109 ms, sayfa filtresi 52 ms, zaman serisi 279 ms, kaynak 290 ms, sayfa listesi 384 ms. Bu, en büyük paketin üst sınırı; 100 bin olaylık sitede ~10 kat hızlı. Panel istekleri paralel atar.
 
 Kullanım sayacı: bir hesabın sahibi olduğu bütün sitelerin o ayki `events` sayısı (sorgu + 10 dk önbellek).
 
