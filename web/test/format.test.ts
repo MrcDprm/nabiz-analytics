@@ -1,12 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { changePercent, changePoints, changeSeconds, duration, niceScale, num, percent } from "../src/format.ts";
+import { changePercent, changePoints, changeSeconds, duration, niceScale, num, percent, share } from "../src/format.ts";
 
 test("sayılar dile göre", () => {
   assert.equal(num(1204, "tr-TR"), "1.204");
   assert.equal(num(1204, "en-GB"), "1,204");
   assert.equal(percent(41.2, "tr-TR"), "%41");
   assert.equal(percent(41.2, "en-GB"), "41%");
+});
+
+test("oran uçları yuvarlanınca yanıltmaz", () => {
+  assert.equal(share(0.49, "tr-TR"), "<%1");
+  assert.equal(share(0.49, "en-GB"), "<1%");
+  assert.equal(share(99.6, "en-GB"), ">99%");
+  assert.equal(share(0, "en-GB"), "0%");
+  assert.equal(share(100, "tr-TR"), "%100");
+  assert.equal(share(18.4, "en-GB"), "18%");
 });
 
 test("süre", () => {
