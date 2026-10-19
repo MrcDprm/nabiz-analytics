@@ -1,5 +1,5 @@
 // Bir sitenin paneli: nabız şeridi, ölçüler, zaman grafiği, filtreler ve kırılımlar.
-import { api, ApiError, type Breakdown, type Live, type Metrics, type Site, type Summary, type Timeseries, type User } from "../api.ts";
+import { api, ApiError, type Breakdown, type GoalResult, type Live, type Metrics, type Site, type Summary, type Timeseries, type User } from "../api.ts";
 import { clear, h, s } from "../dom.ts";
 import { changePercent, changePoints, changeSeconds, compact, duration, num, percent, type Delta } from "../format.ts";
 import { lang, locale, t, tryT } from "../i18n.ts";
@@ -28,6 +28,10 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     middle.push(sel);
   } else {
     middle.push(h("span", { class: "site-name" }, domain));
+  }
+  const mine = sites.find((st) => st.domain === domain);
+  if (mine && (mine.role === "owner" || mine.role === "admin")) {
+    middle.push(h("a", { class: "text-btn", href: `/settings/${domain}` }, t("settings")));
   }
 
   const periodSel = h("select", { class: "period", "aria-label": t("period") });
@@ -147,8 +151,48 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     createPanel({ title: t("sources"), tabs: tabs(["source", "utm_source", "utm_medium", "utm_campaign"]), column: () => t("col.source"), label: valueLabel, count, load, onPick: pick }),
     createPanel({ title: t("countries"), tabs: [{ prop: "country", label: t("countries") }], column: () => t("col.country"), label: valueLabel, count, load, onPick: pick }),
     createPanel({ title: t("devices"), tabs: tabs(["device", "browser", "os"]), column: () => t("col.device"), label: valueLabel, count, load, onPick: pick }),
-    createPanel({ title: t("events"), tabs: [{ prop: "event", label: t("events") }], column: () => t("col.event"), label: valueLabel, count, load, onPick: pick, emptyText: t("emptyEvents"), wide: true }),
+    createPanel({ title: t("events"), tabs: [{ prop: "event", label: t("events") }], column: () => t("col.event"), label: valueLabel, count, load, onPick: pick, emptyText: t("emptyEvents") }),
   ];
+
+  // --- Hedefler: ulaşan kişi ve dönüşüm oranı ---
+  const goalRows = h("ul", { class: "rows" });
+  const goalStatus = h("p", { class: "panel-status", hidden: true });
+  const goalsPanel = h(
+    "section",
+    { class: "panel" },
+    h("div", { class: "panel-head" }, h("h2", null, t("goals"))),
+    h("div", { class: "cols", "aria-hidden": "true" }, h("span", null, t("col.goal")), h("span", null, t("col.conversion"))),
+    goalRows,
+    goalStatus,
+  );
+  async function loadGoals(signal: AbortSignal) {
+    try {
+      const { goals } = await api<{ goals: GoalResult[] }>(`${base}/goals?${apiQuery(state, tz)}`, { signal });
+      clear(goalRows);
+      goalStatus.hidden = goals.length > 0;
+      goalStatus.textContent = t("noGoalsDash");
+      const top = Math.max(1, ...goals.map((g) => g.visitors));
+      const rate = new Intl.NumberFormat(locale(), { style: "percent", maximumFractionDigits: 1 });
+      for (const g of goals) {
+        // "/blog/*" gibi joker hedefler tek bir sayfa değil; onlara göre süzülmez.
+        const exact = !(g.kind === "page" && g.value.endsWith("*"));
+        const body = [
+          h("span", { class: "v" }, g.value),
+          h("span", { class: "n" }, h("span", { class: "muted" }, `${num(g.visitors, locale())} ${t("people")}`), "  ", rate.format(g.rate / 100)),
+        ];
+        const inner = exact
+          ? h("button", { type: "button", title: t("filterHint"), onclick: () => update(withFilter(state, [g.kind === "page" ? "page" : "event", g.value])) }, ...body)
+          : h("div", { class: "row-static" }, ...body);
+        const li = h("li", null, inner);
+        li.style.setProperty("--w", `${(g.visitors / top) * 100}%`);
+        goalRows.append(li);
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      goalStatus.hidden = false;
+      goalStatus.textContent = t("errorGeneric");
+    }
+  }
 
   const main = h(
     "main",
@@ -156,7 +200,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     vitals,
     chart,
     filterBar,
-    h("div", { class: "panels" }, ...panels.map((p) => p.el)),
+    h("div", { class: "panels" }, ...panels.slice(0, 4).map((p) => p.el), goalsPanel, panels[4]!.el),
   );
   root.replaceChildren(
     header({ user, middle, right: [periodSel, custom], rerender: ctx.rerender, navigate: ctx.navigate }),
@@ -241,6 +285,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
     loadCtrl = new AbortController();
     const signal = loadCtrl.signal;
     for (const p of panels) p.refresh();
+    loadGoals(signal);
     try {
       const [sum, series] = await Promise.all([
         api<Summary>(`${base}/summary?${apiQuery(state, tz)}`, { signal }),

@@ -8,6 +8,7 @@ import { applyTheme } from "./shell.ts";
 import { dashboardView } from "./views/dashboard.ts";
 import { loginView } from "./views/login.ts";
 import { notFoundView, sitesView } from "./views/sites.ts";
+import { settingsView } from "./views/settings.ts";
 
 const root = document.getElementById("app")!;
 let leave: (() => void)[] = [];
@@ -39,8 +40,14 @@ async function render() {
 
     if (path === "/") {
       if (!user) return navigate("/login");
-      if (sites.length === 1) return navigate(`/${sites[0]!.domain}`);
       return sitesView(root, user, sites, ctx);
+    }
+    if (path.startsWith("/settings/")) {
+      const site = sites.find((st) => st.domain === path.slice("/settings/".length).toLowerCase());
+      if (!user) return navigate("/login");
+      if (!site) return notFoundView(root, user, ctx);
+      document.title = `${site.domain} | Nabız`;
+      return settingsView(root, site, user, ctx);
     }
     const domain = path.slice(1).toLowerCase();
     if (!/^[a-z0-9.-]+$/.test(domain)) return notFoundView(root, user, ctx);
