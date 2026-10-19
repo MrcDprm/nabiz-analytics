@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/auth"
 	"github.com/MrcDprm/nabiz-analytics/internal/geo"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/salt"
@@ -28,7 +29,9 @@ const usage = `nabiz: çerezsiz web analitiği
 
 Kullanım:
   nabiz [serve] [-addr ADRES] [-data KLASÖR] [-mode selfhost|cloud] [-trust-proxy]
-  nabiz geoip update [-data KLASÖR]   ülke veritabanını (DB-IP Lite) indirir ya da yeniler
+  nabiz geoip update [-data KLASÖR]               ülke veritabanını (DB-IP Lite) indirir ya da yeniler
+  nabiz user add [-data KLASÖR] E-POSTA           hesap açar (şifre ekranda görünmeden sorulur)
+  nabiz site add [-data KLASÖR] -owner E-POSTA ALAN_ADI   site ekler
   nabiz version
 
 Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE, NABIZ_TRUST_PROXY=1.
@@ -40,9 +43,9 @@ func main() {
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
 	}
-	// "geoip update" iki kelimelik komut; bayraklar ikinci kelimeden sonra gelir.
+	// "geoip update", "user add" gibi iki kelimelik komutlar; bayraklar ikinci kelimeden sonra gelir.
 	sub := ""
-	if cmd == "geoip" && len(args) > 0 && args[0] != "" && args[0][0] != '-' {
+	if (cmd == "geoip" || cmd == "user" || cmd == "site") && len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		sub, args = args[0], args[1:]
 	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
@@ -51,6 +54,7 @@ func main() {
 	data := fs.String("data", env("NABIZ_DATA", "data"), "")
 	mode := fs.String("mode", env("NABIZ_MODE", string(server.ModeSelfhost)), "")
 	trustProxy := fs.Bool("trust-proxy", os.Getenv("NABIZ_TRUST_PROXY") == "1", "")
+	owner := fs.String("owner", "", "")
 	_ = fs.Parse(args)
 
 	switch cmd {
@@ -68,6 +72,21 @@ func main() {
 			log.Fatalf("nabiz: geoip: %v", err)
 		}
 		fmt.Println("Ülke veritabanı güncellendi. Çalışan sunucuya SIGHUP gönderince yeni dosyayı yükler.")
+	case "user", "site":
+		if sub != "add" || fs.NArg() != 1 {
+			fmt.Fprint(os.Stderr, usage)
+			os.Exit(2)
+		}
+		var err error
+		if cmd == "user" {
+			err = addUser(*data, fs.Arg(0))
+		} else {
+			err = addSite(*data, *owner, fs.Arg(0))
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "nabiz:", err)
+			os.Exit(1)
+		}
 	case "serve":
 		m := server.Mode(*mode)
 		if m != server.ModeSelfhost && m != server.ModeCloud {
@@ -144,7 +163,11 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	go reloadGeoOnHUP(ctx, locator)
 
 	rec := ingest.NewRecorder(st, keeper, locator, nil)
-	srv := server.New(cfg, st, rec)
+	authSvc, err := auth.NewService(st, nil)
+	if err != nil {
+		return err
+	}
+	srv := server.New(cfg, st, rec, authSvc)
 	go rec.Run(ctx)
 	go srv.Run(ctx)
 

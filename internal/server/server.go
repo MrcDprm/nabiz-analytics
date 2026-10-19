@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/auth"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
@@ -32,21 +33,31 @@ type Server struct {
 	cfg      Config
 	store    *store.Store
 	recorder *ingest.Recorder
+	auth     *auth.Service
 	mux      *http.ServeMux
+	csrf     *http.CrossOriginProtection
 
 	// IP başına: saniyede 20 olay, art arda en fazla 60. Aynı ağdaki (ör. bir
 	// ofis) birçok kişi tek IP'den gelebilir, o yüzden cömert.
 	eventLimit *limiter
+	// IP başına: dakikada 5 giriş denemesi.
+	loginLimit *limiter
 }
 
-func New(cfg Config, st *store.Store, rec *ingest.Recorder) *Server {
+func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Server {
 	s := &Server{
-		cfg: cfg, store: st, recorder: rec, mux: http.NewServeMux(),
+		cfg: cfg, store: st, recorder: rec, auth: a, mux: http.NewServeMux(),
+		csrf:       http.NewCrossOriginProtection(),
 		eventLimit: newLimiter(20, 60, nil),
+		loginLimit: newLimiter(5.0/60, 5, nil),
 	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("POST /api/event", s.event)
 	s.mux.HandleFunc("GET /js/nabiz.js", s.tracker)
+
+	s.mux.HandleFunc("POST /api/login", s.login)
+	s.mux.HandleFunc("POST /api/logout", s.logout)
+	s.mux.HandleFunc("GET /api/me", s.requireUser(s.me))
 	return s
 }
 
@@ -60,6 +71,10 @@ func (s *Server) Run(ctx context.Context) {
 			return
 		case <-t.C:
 			s.eventLimit.sweep()
+			s.loginLimit.sweep()
+			if err := s.auth.Sweep(ctx); err != nil {
+				log.Printf("oturum temizliği: %v", err)
+			}
 		}
 	}
 }
@@ -70,6 +85,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+	// CSRF: başka bir siteden gelen POST/PATCH/DELETE isteklerini reddet
+	// (tarayıcının Sec-Fetch-Site ve Origin başlıklarına bakar). Takip ucu
+	// bilerek başka sitelerden çağrıldığı için hariç; o Origin'i kendisi denetler.
+	if r.URL.Path != "/api/event" {
+		if err := s.csrf.Check(r); err != nil {
+			writeError(w, http.StatusForbidden, "başka bir siteden gelen istek reddedildi")
+			return
+		}
+	}
 	s.mux.ServeHTTP(w, r)
 }
 
