@@ -51,7 +51,7 @@ func TestHealthz(t *testing.T) {
 	if body["status"] != "ok" || body["version"] != "test" {
 		t.Fatalf("gövde = %v", body)
 	}
-	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
+	if rec.Header().Get("X-Content-Type-Options") != "nosniff" || rec.Header().Get("Permissions-Policy") == "" {
 		t.Error("güvenlik başlıkları eksik")
 	}
 }

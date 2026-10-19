@@ -169,6 +169,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+	// Panel kamera, mikrofon ya da konum istemez; bir açık olsa bile istenemesin.
+	h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 	// CSRF: başka bir siteden gelen POST/PATCH/DELETE isteklerini reddet
 	// (tarayıcının Sec-Fetch-Site ve Origin başlıklarına bakar). Hariç tutulanlar:
 	// takip ucu (başka sitelerden çağrılır, Origin'i kendisi denetler), iyzico'nun
