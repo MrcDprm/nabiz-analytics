@@ -30,12 +30,20 @@ var contentTypes = map[string]string{
 
 // webRoutes paneli sunar. Panel tek sayfalık bir uygulama: "/", "/login" ve
 // "/{alan-adı}" aynı index.html'i açar, gerisini tarayıcıdaki kod çözer.
+// Sunucu sadece <head>'i sayfaya göre yazar (seo.go).
 func (s *Server) webRoutes() {
-	index := s.serveFile("index.html", "no-cache")
-	s.mux.HandleFunc("GET /{$}", index)
-	for _, p := range []string{"/login", "/signup", "/verify", "/forgot", "/reset", "/account", "/invite", "/billing", "/how-it-works", "/privacy", "/terms"} {
+	index := s.htmlPage("", false) // panel sayfaları: dizine girmez
+	for _, p := range seoOrder {
+		s.mux.HandleFunc("GET "+pubPath(p, false), s.htmlPage(p, false))
+		s.mux.HandleFunc("GET "+pubPath(p, true), s.htmlPage(p, true))
+	}
+	for _, p := range []string{"/login", "/signup", "/verify", "/forgot", "/reset", "/account", "/invite", "/billing"} {
 		s.mux.HandleFunc("GET "+p, index)
 	}
+	s.mux.HandleFunc("GET /robots.txt", s.robots)
+	s.mux.HandleFunc("GET /sitemap.xml", s.sitemap)
+	s.mux.HandleFunc("GET /og-tr.png", s.serveFile("og-tr.png", "public, max-age=86400"))
+	s.mux.HandleFunc("GET /og-en.png", s.serveFile("og-en.png", "public, max-age=86400"))
 	sitePage := func(w http.ResponseWriter, r *http.Request) {
 		// Alan adına benzemeyen adresler (ör. /wp-admin) için 404.
 		if !site.ValidDomain(strings.ToLower(r.PathValue("domain"))) {
@@ -52,6 +60,33 @@ func (s *Server) webRoutes() {
 		// Dosya adlarında içeriğin özeti var; tarayıcı süresiz saklayabilir.
 		s.serveFile("assets/"+r.PathValue("name"), "public, max-age=31536000, immutable")(w, r)
 	})
+}
+
+// htmlPage, index.html'i sayfaya özel <head> ile sunar; panel derlenmemişse
+// (s.cfg.Web nil) 404 döner.
+func (s *Server) htmlPage(path string, en bool) http.HandlerFunc {
+	lang := "tr"
+	if en {
+		lang = "en"
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.Web == nil {
+			http.NotFound(w, r)
+			return
+		}
+		data, err := fs.ReadFile(s.cfg.Web, "index.html")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		out := strings.Replace(string(data), `<html lang="tr">`, `<html lang="`+lang+`">`, 1)
+		page := []byte(strings.Replace(out, "<title>Nabız</title>", s.seoHead(path, en), 1))
+		h := w.Header()
+		h.Set("Content-Type", "text/html; charset=utf-8")
+		h.Set("Cache-Control", "no-cache")
+		h.Set("Content-Security-Policy", pageCSP)
+		http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(page))
+	}
 }
 
 func (s *Server) serveFile(name, cacheControl string) http.HandlerFunc {
