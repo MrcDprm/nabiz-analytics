@@ -1,0 +1,73 @@
+// Panelin girişi: adres → görünüm. Sayfa yenilenmeden gezinmek için history API.
+import "@fontsource-variable/atkinson-hyperlegible-next";
+import "./styles.css";
+import { api, ApiError, type Site, type User } from "./api.ts";
+import { h } from "./dom.ts";
+import { t } from "./i18n.ts";
+import { applyTheme } from "./shell.ts";
+import { dashboardView } from "./views/dashboard.ts";
+import { loginView } from "./views/login.ts";
+import { notFoundView, sitesView } from "./views/sites.ts";
+
+const root = document.getElementById("app")!;
+let leave: (() => void)[] = [];
+
+function navigate(path: string) {
+  history.pushState(null, "", path);
+  render();
+}
+
+async function currentUser(): Promise<User | null> {
+  try {
+    return await api<User>("/api/me");
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return null;
+    throw e;
+  }
+}
+
+async function render() {
+  for (const fn of leave) fn();
+  leave = [];
+  const ctx = { rerender: render, navigate, onLeave: (fn: () => void) => leave.push(fn) };
+  const path = decodeURIComponent(location.pathname).replace(/\/+$/, "") || "/";
+
+  try {
+    if (path === "/login") return loginView(root, ctx);
+    const user = await currentUser();
+    const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
+
+    if (path === "/") {
+      if (!user) return navigate("/login");
+      if (sites.length === 1) return navigate(`/${sites[0]!.domain}`);
+      return sitesView(root, user, sites, ctx);
+    }
+    const domain = path.slice(1).toLowerCase();
+    if (!/^[a-z0-9.-]+$/.test(domain)) return notFoundView(root, user, ctx);
+    // Site erişilebilir mi? Erişilemiyorsa (yok ya da izin yok) sunucu 404 der.
+    try {
+      await api(`/api/stats/${encodeURIComponent(domain)}/live`);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return notFoundView(root, user, ctx);
+      throw e;
+    }
+    document.title = `${domain} | Nabız`;
+    dashboardView(root, domain, user, sites, ctx);
+  } catch (e) {
+    root.replaceChildren(
+      h("main", { class: "wrap narrow" }, h("p", { class: "form-error" }, e instanceof ApiError && e.status === 0 ? t("errorOffline") : t("errorGeneric"))),
+    );
+  }
+}
+
+// Panel içindeki bağlantılar sayfayı yenilemeden açılır.
+document.addEventListener("click", (e) => {
+  const a = (e.target as Element).closest?.("a");
+  if (!a || a.target || a.origin !== location.origin || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  navigate(a.pathname + a.search);
+});
+addEventListener("popstate", render);
+
+applyTheme();
+render();
