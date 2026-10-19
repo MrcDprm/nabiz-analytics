@@ -66,6 +66,12 @@ The password is asked twice and never shown. Open `https://nabiz.example.com`, l
 
 If your site has a Content Security Policy, add `https://nabiz.example.com` to `script-src` and `connect-src`.
 
+If some addresses carry an ID or a code (`/bookings/8f3c…`, `/r/KDFX`), list their patterns in `data-mask`. The pattern is sent instead of the real address, so the ID never leaves the browser and those pages share one row in the dashboard:
+
+```html
+<script defer src="https://nabiz.example.com/js/nabiz.js" data-site="example.com" data-mask="/bookings/:id /r/:code"></script>
+```
+
 ## Settings
 
 All settings live in `/etc/nabiz/nabiz.env`; run `sudo systemctl restart nabiz` after changing it.
