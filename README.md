@@ -15,7 +15,7 @@ Cookie-free, privacy-friendly web analytics that runs as a single Go binary with
 - Proxy guide for Vercel, Caddy and Nginx, so the script loads from your own domain.
 
 **Privacy**
-- No cookies, no local storage, no fingerprint kept.
+- No cookies and nothing written to the browser; no fingerprint kept.
 - Visitors are counted with `hash(daily salt + site + IP + user agent)`. The salt rotates every night and the old one is deleted, so visits can't be linked across days.
 - The IP is used only in memory to find the country and is never written to disk.
 - A "How it works / what we collect" page and a KVKK / GDPR notice template.
