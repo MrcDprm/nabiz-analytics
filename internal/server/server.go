@@ -70,12 +70,17 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("GET /api/sites/{id}/goals", s.requireUser(s.listGoals))
 	s.mux.HandleFunc("POST /api/sites/{id}/goals", s.requireUser(s.addGoal))
 	s.mux.HandleFunc("DELETE /api/sites/{id}/goals/{goal}", s.requireUser(s.deleteGoal))
+	s.mux.HandleFunc("GET /api/sites/{id}/funnels", s.requireUser(s.listFunnels))
+	s.mux.HandleFunc("POST /api/sites/{id}/funnels", s.requireUser(s.addFunnel))
+	s.mux.HandleFunc("DELETE /api/sites/{id}/funnels/{funnel}", s.requireUser(s.deleteFunnel))
 
 	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
 	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
 	s.mux.HandleFunc("GET /api/stats/{domain}/breakdown", s.statsBreakdown)
 	s.mux.HandleFunc("GET /api/stats/{domain}/live", s.statsLive)
 	s.mux.HandleFunc("GET /api/stats/{domain}/goals", s.statsGoals)
+	s.mux.HandleFunc("GET /api/stats/{domain}/funnels", s.statsFunnels)
+	s.mux.HandleFunc("GET /api/stats/{domain}/props", s.statsProps)
 	s.webRoutes()
 	return s
 }

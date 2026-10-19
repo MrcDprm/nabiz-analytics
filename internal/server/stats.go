@@ -189,3 +189,76 @@ func (s *Server) statsGoals(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"goals": res})
 }
+
+// statsFunnels, sitenin hunilerini ve (id verilmişse ya da ilk huni için) adım sonuçlarını döndürür.
+func (s *Server) statsFunnels(w http.ResponseWriter, r *http.Request) {
+	st, ok := s.statsSite(w, r)
+	if !ok {
+		return
+	}
+	q, ok := s.statsQuery(w, r, st.ID)
+	if !ok {
+		return
+	}
+	funnels, err := site.Funnels(r.Context(), s.store.R, st.ID)
+	if err != nil {
+		internalError(w, "stats huniler", err)
+		return
+	}
+	out := map[string]any{"funnels": funnels}
+	var pick *site.Funnel
+	for i := range funnels {
+		if want := r.URL.Query().Get("id"); want == "" || funnels[i].ID == want {
+			pick = &funnels[i]
+			break
+		}
+	}
+	if pick != nil {
+		steps := make([]stats.GoalDef, len(pick.Steps))
+		for i, step := range pick.Steps {
+			steps[i] = stats.GoalDef{Kind: step.Kind, Value: step.Value}
+		}
+		res, err := stats.GetFunnel(r.Context(), s.store.R, q, steps)
+		if err != nil {
+			internalError(w, "stats huni", err)
+			return
+		}
+		out["selected"] = pick.ID
+		out["steps"] = res
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// statsProps: event verilirse özellik adları, key de verilirse değerleri.
+func (s *Server) statsProps(w http.ResponseWriter, r *http.Request) {
+	st, ok := s.statsSite(w, r)
+	if !ok {
+		return
+	}
+	q, ok := s.statsQuery(w, r, st.ID)
+	if !ok {
+		return
+	}
+	v := r.URL.Query()
+	event, key := v.Get("event"), v.Get("key")
+	if event == "" || len(event) > 256 || len(key) > 128 {
+		writeError(w, http.StatusBadRequest, "olay adı gerekli")
+		return
+	}
+	var rows []stats.Row
+	var err error
+	if key == "" {
+		rows, err = stats.PropKeys(r.Context(), s.store.R, q, event)
+	} else {
+		limit, _ := strconv.Atoi(v.Get("limit"))
+		if limit == 0 {
+			limit = 10
+		}
+		rows, err = stats.PropValues(r.Context(), s.store.R, q, event, key, limit)
+	}
+	if err != nil {
+		internalError(w, "stats özellikler", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"rows": rows})
+}

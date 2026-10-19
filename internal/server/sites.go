@@ -163,3 +163,56 @@ func (s *Server) deleteGoal(w http.ResponseWriter, r *http.Request, u *auth.User
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) listFunnels(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	st, _, ok := s.siteFor(w, r, u, "viewer")
+	if !ok {
+		return
+	}
+	fs, err := site.Funnels(r.Context(), s.store.R, st.ID)
+	if err != nil {
+		internalError(w, "huniler", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"funnels": fs})
+}
+
+func (s *Server) addFunnel(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	st, _, ok := s.siteFor(w, r, u, "admin")
+	if !ok {
+		return
+	}
+	var in struct {
+		Name  string      `json:"name"`
+		Steps []site.Step `json:"steps"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	f, err := site.AddFunnel(r.Context(), s.store.W, st.ID, in.Name, in.Steps)
+	switch {
+	case errors.Is(err, site.ErrInvalidFunnel), errors.Is(err, site.ErrTooManyFunnel):
+		writeError(w, http.StatusBadRequest, err.Error())
+	case err != nil:
+		internalError(w, "huni ekle", err)
+	default:
+		writeJSON(w, http.StatusCreated, f)
+	}
+}
+
+func (s *Server) deleteFunnel(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	st, _, ok := s.siteFor(w, r, u, "admin")
+	if !ok {
+		return
+	}
+	found, err := site.DeleteFunnel(r.Context(), s.store.W, st.ID, r.PathValue("funnel"))
+	if err != nil {
+		internalError(w, "huni sil", err)
+		return
+	}
+	if !found {
+		writeError(w, http.StatusNotFound, "huni bulunamadı")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

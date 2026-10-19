@@ -115,3 +115,31 @@ func TestOtherUsersSiteIs404(t *testing.T) {
 		}
 	}
 }
+
+func TestFunnelEndpoints(t *testing.T) {
+	s, c := statsSetup(t)
+	id := siteID(t, s, "a.com")
+	rec := do(s, "POST", "/api/sites/"+id+"/funnels", `{"name":"Kayıt","steps":[{"kind":"page","value":"/"},{"kind":"event","value":"Kayıt"}]}`, c, nil)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("huni ekle = %d %s", rec.Code, rec.Body)
+	}
+	rec = do(s, "GET", "/api/stats/a.com/funnels?period=day", "", c, nil)
+	var body struct {
+		Funnels  []site.Funnel `json:"funnels"`
+		Selected string        `json:"selected"`
+		Steps    []struct{ Visitors int64 }
+	}
+	json.NewDecoder(rec.Body).Decode(&body)
+	if rec.Code != 200 || len(body.Funnels) != 1 || body.Selected != body.Funnels[0].ID || len(body.Steps) != 2 || body.Steps[0].Visitors != 1 {
+		t.Fatalf("huni istatistiği = %d %+v", rec.Code, body)
+	}
+	if rec := do(s, "GET", "/api/stats/a.com/props?event=Kayıt", "", c, nil); rec.Code != 200 {
+		t.Fatalf("özellikler = %d", rec.Code)
+	}
+	if rec := do(s, "GET", "/api/stats/a.com/props", "", c, nil); rec.Code != http.StatusBadRequest {
+		t.Fatalf("olaysız özellik = %d", rec.Code)
+	}
+	if rec := do(s, "DELETE", "/api/sites/"+id+"/funnels/"+body.Funnels[0].ID, "", c, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("huni sil = %d", rec.Code)
+	}
+}
