@@ -63,7 +63,9 @@ _Coming soon._
 
 ## Installation
 
-_Coming soon._
+- **Hosted:** create a free account at [nabiz.miracdeprem.com](https://nabiz.miracdeprem.com), add your site and paste the line it gives you.
+- **Self-hosted:** one binary, SQLite, systemd and Caddy; no limits. See [docs/self-hosting.md](docs/self-hosting.md).
+- **Serving the script from your own domain** (keeps working with ad blockers): [docs/proxy.md](docs/proxy.md).
 
 ## What I Learned
 

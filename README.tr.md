@@ -63,7 +63,9 @@ _Yakında._
 
 ## Kurulum ve Çalıştırma
 
-_Yakında._
+- **Barındırılan sürüm:** [nabiz.miracdeprem.com](https://nabiz.miracdeprem.com) adresinde ücretsiz hesap aç, siteni ekle ve verdiği satırı sayfalarına yapıştır.
+- **Kendi sunucunda:** tek program dosyası, SQLite, systemd ve Caddy; sınır yok. Bkz. [docs/self-hosting.tr.md](docs/self-hosting.tr.md).
+- **Betiği sitenin kendi alan adından sunmak** (reklam engelleyicilere takılmaz): [docs/proxy.tr.md](docs/proxy.tr.md).
 
 ## Öğrendiklerim
 

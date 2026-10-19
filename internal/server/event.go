@@ -21,8 +21,9 @@ import (
 // olduğunu öğrenmesinler), 400 bozuk olay, 403 Origin uyuşmuyor, 413 gövde
 // çok büyük, 429 çok sık istek.
 func (s *Server) event(w http.ResponseWriter, r *http.Request) {
-	ip := s.clientIP(r)
-	if !s.eventLimit.allow(ip) {
+	// Hız sınırı sunucuya doğrudan bağlanan adrese göre (taklit edilemez);
+	// sayım ve ülke ise ziyaretçinin adresine göre (proxy arkasında farklıdır).
+	if !s.eventLimit.allow(s.clientIP(r)) {
 		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
@@ -56,7 +57,7 @@ func (s *Server) event(w http.ResponseWriter, r *http.Request) {
 
 	ua := r.UserAgent()
 	if !ingest.IsBot(ua) {
-		err := s.recorder.Record(r.Context(), e, ip, ua)
+		err := s.recorder.Record(r.Context(), e, s.visitorIP(r), ua)
 		if err != nil && !errors.Is(err, ingest.ErrUnknownSite) {
 			log.Printf("event: %v", err) // IP ve UA log'a yazılmaz
 		}
@@ -72,6 +73,23 @@ func originMatches(origin, site string) bool {
 	}
 	h := strings.ToLower(u.Hostname())
 	return h == site || strings.HasSuffix(h, "."+site)
+}
+
+// visitorIP, ziyaretçinin kendi adresi: X-Forwarded-For'un ilk değeri. Betik
+// sitenin kendi alan adından bir proxy (Vercel, Nginx...) üzerinden geliyorsa
+// gerçek ziyaretçi adresi oradadır. Bu değer taklit edilebilir; en kötü ihtimalle
+// tekil ziyaretçi sayısı ya da ülke bozulur, kimsenin verisi sızmaz. Hız sınırı
+// bu yüzden ona değil clientIP'ye bakar.
+func (s *Server) visitorIP(r *http.Request) string {
+	if s.cfg.TrustProxy {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			first, _, _ := strings.Cut(xff, ",")
+			if ip := strings.TrimSpace(first); net.ParseIP(ip) != nil {
+				return ip
+			}
+		}
+	}
+	return s.clientIP(r)
 }
 
 // clientIP: Caddy arkasındaysak (-trust-proxy) X-Forwarded-For'un son değeri,
