@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/MrcDprm/nabiz-analytics/internal/geo"
+	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
+	"github.com/MrcDprm/nabiz-analytics/internal/salt"
 	"github.com/MrcDprm/nabiz-analytics/internal/server"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
@@ -90,6 +92,26 @@ func env(key, fallback string) string {
 
 func geoPath(dataDir string) string { return filepath.Join(dataDir, "geoip.mmdb") }
 
+// reloadGeoOnHUP: "nabiz geoip update" sonrası "systemctl reload nabiz" (SIGHUP)
+// sunucuyu durdurmadan yeni ülke dosyasını yükler.
+func reloadGeoOnHUP(ctx context.Context, l *geo.Locator) {
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+	defer signal.Stop(hup)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-hup:
+			if err := l.Reload(); err != nil {
+				log.Printf("nabiz: geoip yeniden yüklenemedi: %v", err)
+			} else {
+				log.Print("nabiz: ülke veritabanı yeniden yüklendi")
+			}
+		}
+	}
+}
+
 func serve(cfg server.Config, addr, dataDir string) error {
 	// 0700: veritabanını sadece sunucuyu çalıştıran kullanıcı okuyabilsin.
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
@@ -104,9 +126,27 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	keeper, err := salt.New(ctx, st.W, nil)
+	if err != nil {
+		return err
+	}
+	locator, err := geo.Open(geoPath(dataDir))
+	if err != nil {
+		return err
+	}
+	if !locator.Loaded() {
+		log.Print("nabiz: ülke veritabanı yok, ülkeler boş kalacak (nabiz geoip update)")
+	}
+	go reloadGeoOnHUP(ctx, locator)
+
+	rec := ingest.NewRecorder(st, keeper, locator, nil)
+	srv := server.New(cfg, st, rec)
+	go rec.Run(ctx)
+	go srv.Run(ctx)
+
 	hs := &http.Server{
 		Addr:              addr,
-		Handler:           server.New(cfg, st),
+		Handler:           srv,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      30 * time.Second, // CSV dışa aktarma bile bunun altında biter
