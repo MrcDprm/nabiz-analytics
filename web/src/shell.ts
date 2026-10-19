@@ -1,7 +1,7 @@
 // Her sayfada ortak olan üst çubuk ve alt bilgi; tema ve dil düğmeleri.
 import { api, type User } from "./api.ts";
 import { h } from "./dom.ts";
-import { lang, setLang, t } from "./i18n.ts";
+import { lang, pub, setLang, t } from "./i18n.ts";
 
 type Theme = "light" | "dark";
 
@@ -55,6 +55,7 @@ export type ShellOptions = {
   right?: Node[]; // dönem seçici vb.
   user: User | null;
   hideAccount?: boolean; // giriş sayfasında "Giriş yap" bağlantısı gereksiz
+  langHref?: string; // tanıtım/metin sayfalarında dil düğmesi öbür dilin adresine gider
   rerender(): void;
   navigate(path: string): void;
 };
@@ -79,22 +80,23 @@ export function header(o: ShellOptions): HTMLElement {
     },
     h("span", { class: "theme-glyph", "aria-hidden": "true" }),
   );
-  const langBtn = h(
-    "button",
-    {
-      type: "button",
-      class: "lang",
-      "aria-label": t("langToggle"),
-      onclick: () => {
-        setLang(lang === "tr" ? "en" : "tr");
-        if (o.user) api("/api/account", { method: "PATCH", body: { locale: lang } }).catch(() => {});
-        o.rerender();
-      },
-    },
-    h("b", null, lang === "tr" ? "TR" : "EN"),
-    " / ",
-    lang === "tr" ? "EN" : "TR",
-  );
+  const langLabel = [h("b", null, lang === "tr" ? "TR" : "EN"), " / ", lang === "tr" ? "EN" : "TR"];
+  const langBtn = o.langHref
+    ? h("a", { class: "lang", href: o.langHref, hreflang: lang === "tr" ? "en" : "tr", "aria-label": t("langToggle") }, ...langLabel)
+    : h(
+        "button",
+        {
+          type: "button",
+          class: "lang",
+          "aria-label": t("langToggle"),
+          onclick: () => {
+            setLang(lang === "tr" ? "en" : "tr");
+            if (o.user) api("/api/account", { method: "PATCH", body: { locale: lang } }).catch(() => {});
+            o.rerender();
+          },
+        },
+        ...langLabel,
+      );
   const account = o.hideAccount
     ? null
     : o.user
@@ -119,7 +121,7 @@ export function header(o: ShellOptions): HTMLElement {
     h(
       "div",
       { class: "wrap" },
-      h("a", { class: "brand", href: "/", "aria-label": "Nabız" }, brandMark(), "Nabız"),
+      h("a", { class: "brand", href: pub("/"), "aria-label": "Nabız" }, brandMark(), "Nabız"),
       ...(o.middle ?? []),
       h("div", { class: "spacer" }),
       ...(o.right ?? []),
@@ -138,9 +140,9 @@ export function footer(): HTMLElement {
     "footer",
     { class: "wrap foot" },
     h("span", null, t("footerPrivacy")),
-    h("a", { href: "/how-it-works" }, t("howItWorks")),
-    h("a", { href: "/privacy" }, t("privacy")),
-    h("a", { href: "/terms" }, t("terms")),
+    h("a", { href: pub("/how-it-works") }, t("howItWorks")),
+    h("a", { href: pub("/privacy") }, t("privacy")),
+    h("a", { href: pub("/terms") }, t("terms")),
     h("a", { href: "https://db-ip.com", rel: "noopener" }, t("footerGeo")),
   );
 }

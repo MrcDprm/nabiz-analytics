@@ -2,7 +2,7 @@
 // canlı nabız şeridi; altında ne toplandığı, kurulum satırı ve kendi sunucunda kurma.
 import { api, type Live } from "../api.ts";
 import { h } from "../dom.ts";
-import { locale, t } from "../i18n.ts";
+import { lang, locale, pub, t } from "../i18n.ts";
 import { num } from "../format.ts";
 import { config, footer, header } from "../shell.ts";
 import { createStrip } from "../components/strip.ts";
@@ -13,7 +13,7 @@ const REPO = "https://github.com/MrcDprm/nabiz-analytics";
 
 export function landingView(root: HTMLElement, ctx: Ctx) {
   const cfg = config();
-  document.title = `Nabız | ${t("landingTitle")}`;
+  document.title = t("landingDocTitle");
 
   // --- Canlı şerit: tanıtım sitesinin son 5 dakikası ---
   const strip = createStrip();
@@ -50,7 +50,7 @@ export function landingView(root: HTMLElement, ctx: Ctx) {
     "div",
     { class: "landing-actions" },
     cfg.signup ? h("a", { class: "primary link-btn", href: "/signup" }, t("signupFree")) : null,
-    h("a", { class: "secondary link-btn", href: "/how-it-works" }, t("howItWorks")),
+    h("a", { class: "secondary link-btn", href: pub("/how-it-works") }, t("howItWorks")),
   );
 
   const hero = h(
@@ -92,7 +92,7 @@ export function landingView(root: HTMLElement, ctx: Ctx) {
   );
 
   root.replaceChildren(
-    header({ user: null, rerender: ctx.rerender, navigate: ctx.navigate }),
+    header({ user: null, rerender: ctx.rerender, navigate: ctx.navigate, langHref: pub("/", lang === "tr" ? "en" : "tr") }),
     h("main", null, hero, collects, install, selfhost),
     footer(),
   );

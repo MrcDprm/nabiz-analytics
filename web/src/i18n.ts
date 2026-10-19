@@ -264,6 +264,8 @@ const tr = {
   privacy: "Gizlilik ve KVKK",
   terms: "Kullanım koşulları",
   landingTitle: "Ziyaretçilerini tanımadan, çerez bandı göstermeden sitenin istatistiklerini gör",
+  // Sunucunun yazdığı <title> ile aynı (internal/server/seo.go).
+  landingDocTitle: "Nabız: çerezsiz web analitiği, Google Analytics alternatifi",
   landingLead: "Nabız 1 KB'lık bir betikle sayar, tarayıcıya hiçbir şey yazmaz ve kişisel veri saklamaz. Ücretsiz; istersen kendi sunucuna sınırsız kur.",
   liveOnDemo: "kişi şu an {site} sitesinde. Yukarıdaki her sıçrama gerçek bir sayfa görüntüleme.",
   openLiveDemo: "Canlı paneli aç",
@@ -549,6 +551,7 @@ const en: Record<Key, string> = {
   privacy: "Privacy",
   terms: "Terms",
   landingTitle: "See your site's stats without identifying visitors or showing a cookie banner",
+  landingDocTitle: "Nabız: cookie-free web analytics, a Google Analytics alternative",
   landingLead: "Nabız counts with a 1 KB script, writes nothing to the browser and stores no personal data. It's free; or install it on your own server with no limits.",
   liveOnDemo: "people on {site} right now. Each spike above is a real page view.",
   openLiveDemo: "Open the live dashboard",
@@ -604,3 +607,7 @@ export function tryT(key: string): string | undefined {
 }
 
 export const locale = () => (lang === "tr" ? "tr-TR" : "en-GB");
+
+// Tanıtım ve metin sayfalarının İngilizcesi /en altında (/en, /en/privacy...);
+// arama motorları iki dili ayrı sayfa olarak görsün diye.
+export const pub = (path: string, l: Lang = lang) => (l === "tr" ? path : path === "/" ? "/en" : "/en" + path);
