@@ -76,6 +76,7 @@ All settings live in `/etc/nabiz/nabiz.env`; run `sudo systemctl restart nabiz` 
 | `NABIZ_BASE_URL` | Your address; used in email links. Required for `cloud`. |
 | `NABIZ_SIGNUP` | `1` opens sign-up on a self-hosted server. |
 | `NABIZ_DEMO_SITE` | A public site whose live pulse is shown on the landing page (`cloud`). |
+| `NABIZ_ADMIN_EMAILS` | Operator accounts with no limits in `cloud` mode (comma-separated). |
 | `NABIZ_SMTP_*` | Email for verification, password reset and invites. Without it, emails are only written to the log. Ports 587 (STARTTLS) and 465 (TLS); plain connections are refused. |
 | `NABIZ_IYZICO_*` | Optional paid plans in `cloud` mode; needs an iyzico merchant account. All empty means payments are off. |
 

@@ -55,6 +55,48 @@ type Service struct {
 
 	mu    sync.Mutex
 	cache map[int64]usageEntry // kullanıcı → kullanım (10 dakika)
+
+	admins map[string]bool // sunucuyu işletenler: sınırsız (e-posta, küçük harf)
+}
+
+// Unlimited, işletmecinin paketi: hiçbir sınır yok.
+var Unlimited = Plan{ID: "unlimited", Pageviews: 1 << 50, Sites: 1 << 30, Members: 1 << 30}
+
+// SetAdmins, sınırsız kullanacak hesapları belirler (NABIZ_ADMIN_EMAILS).
+func (s *Service) SetAdmins(emails []string) {
+	s.admins = make(map[string]bool)
+	for _, e := range emails {
+		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
+			s.admins[e] = true
+		}
+	}
+}
+
+func (s *Service) isAdmin(ctx context.Context, userID int64) (bool, error) {
+	if len(s.admins) == 0 {
+		return false, nil
+	}
+	var email string
+	err := s.st.R.QueryRowContext(ctx, `SELECT email FROM users WHERE id = ?`, userID).Scan(&email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return s.admins[strings.ToLower(email)], err
+}
+
+// planFor: kullanıcının bugün geçerli paketi (işletmeci için sınırsız).
+func (s *Service) planFor(ctx context.Context, userID int64) (Plan, string, *subRow, error) {
+	if admin, err := s.isAdmin(ctx, userID); err != nil {
+		return Plan{}, "", nil, err
+	} else if admin {
+		return Unlimited, "admin", nil, nil
+	}
+	r, err := s.sub(ctx, userID)
+	if err != nil {
+		return Plan{}, "", nil, err
+	}
+	p, state := s.effective(r)
+	return p, state, r, nil
 }
 
 type usageEntry struct {
@@ -194,11 +236,10 @@ func (s *Service) forget(userID int64) {
 }
 
 func (s *Service) StatusOf(ctx context.Context, userID int64) (*Status, error) {
-	r, err := s.sub(ctx, userID)
+	p, state, r, err := s.planFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	p, state := s.effective(r)
 	st := &Status{Plan: p, State: state}
 	if r != nil && state != "free" {
 		st.Interval = r.interval
@@ -233,11 +274,10 @@ func (s *Service) CanInvite(ctx context.Context, siteID string) error {
 	if err := s.st.R.QueryRowContext(ctx, `SELECT user_id FROM memberships WHERE site_id = ? AND role = 'owner'`, siteID).Scan(&owner); err != nil {
 		return err
 	}
-	r, err := s.sub(ctx, owner)
+	p, _, _, err := s.planFor(ctx, owner)
 	if err != nil {
 		return err
 	}
-	p, _ := s.effective(r)
 	var n int
 	if err := s.st.R.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM memberships WHERE site_id = ?)
 		+ (SELECT count(*) FROM invites WHERE site_id = ? AND expires_at > ?)`, siteID, siteID, s.now().Unix()).Scan(&n); err != nil {

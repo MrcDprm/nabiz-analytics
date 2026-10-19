@@ -301,6 +301,28 @@ func TestPaymentsOff(t *testing.T) {
 	}
 }
 
+func TestAdminUnlimited(t *testing.T) {
+	e := setup(t)
+	ctx := context.Background()
+	e.st.W.Exec(`INSERT INTO sites (id, domain, created_at) VALUES ('s1', 'a.com', 0), ('s2', 'b.com', 0)`)
+	e.st.W.Exec(`INSERT INTO memberships (site_id, user_id, role) VALUES ('s1', 1, 'owner'), ('s2', 1, 'owner')`)
+	if err := e.s.CanAddSite(ctx, 1); err != ErrSiteLimit {
+		t.Fatalf("yönetici değilken: %v", err)
+	}
+	e.s.SetAdmins([]string{" ALI@example.com ", ""})
+	e.s.forget(1)
+	st, _ := e.s.StatusOf(ctx, 1)
+	if st.Plan.ID != "unlimited" || st.State != "admin" {
+		t.Fatalf("yönetici durumu = %+v", st)
+	}
+	if err := e.s.CanAddSite(ctx, 1); err != nil {
+		t.Fatalf("yönetici site ekleyemedi: %v", err)
+	}
+	if err := e.s.CanInvite(ctx, "s1"); err != nil {
+		t.Fatalf("yönetici davet edemedi: %v", err)
+	}
+}
+
 func TestAccountDeleteCancels(t *testing.T) {
 	e := setup(t)
 	ctx := context.Background()

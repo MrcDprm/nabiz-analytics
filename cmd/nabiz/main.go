@@ -240,6 +240,10 @@ func serve(cfg server.Config, addr, dataDir string, useBilling bool, iyz *billin
 	// cloud modunda paketler ve sınırlar her zaman var; iyz nil ise ödeme kapalı.
 	if useBilling {
 		cfg.Billing = billing.New(st, iyz, codes, nil)
+		// Sunucuyu işletenler sınırsız kullanır (virgülle ayrılmış e-postalar).
+		if admins := os.Getenv("NABIZ_ADMIN_EMAILS"); admins != "" {
+			cfg.Billing.SetAdmins(strings.Split(admins, ","))
+		}
 	}
 	srv := server.New(cfg, st, rec, authSvc)
 	go rec.Run(ctx)

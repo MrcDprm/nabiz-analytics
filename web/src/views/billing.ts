@@ -76,8 +76,9 @@ export async function billingView(root: HTMLElement, user: User, ctx: Ctx) {
     { class: "settings-block" },
     h("h2", null, planName(st.plan.id), st.interval ? h("span", { class: "muted small" }, ` (${st.interval === "yearly" ? t("yearly") : t("monthly")})`) : null),
     stateText ? h("p", { class: st.state === "unpaid" ? "form-error" : "muted" }, stateText) : null,
-    meter(t("usageMonth"), st.usage.pageviews, st.plan.pageviews),
-    meter(t("usageSites"), st.usage.sites, st.plan.sites),
+    ...(st.plan.id === "unlimited"
+      ? [h("p", { class: "muted" }, `${t("usageMonth")}: ${num(st.usage.pageviews, locale())}. ${t("usageSites")}: ${st.usage.sites}.`)]
+      : [meter(t("usageMonth"), st.usage.pageviews, st.plan.pageviews), meter(t("usageSites"), st.usage.sites, st.plan.sites)]),
     st.usage.pageviews > st.plan.pageviews ? h("p", { class: "notice" }, t("overUsage")) : null,
   );
   if (st.state === "active" || st.state === "unpaid") {
@@ -99,6 +100,7 @@ export async function billingView(root: HTMLElement, user: User, ctx: Ctx) {
     );
   }
   main.append(current, out);
+  if (st.plan.id === "unlimited") return; // işletmeci: satın alma ya da sınır yok
 
   // Ödeme kapalı (ücretsiz barındırma): satın alma yok, kendi sunucuna kurma yolu var.
   if (!data.payments) {

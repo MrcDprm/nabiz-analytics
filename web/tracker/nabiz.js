@@ -23,11 +23,21 @@
     }
   }
 
+  // Gönderilen adres: sadece yol ve kaynak parametreleri. "#" sonrası (ör. Zarf'ta
+  // şifre çözme anahtarı) ve diğer sorgu değerleri (ör. ?token=...) tarayıcıdan çıkmaz.
+  var keep = ["utm_source", "utm_medium", "utm_campaign", "ref", "source"];
+  function page_url() {
+    var q = new URLSearchParams(l.search), out = new URLSearchParams();
+    for (var i = 0; i < keep.length; i++) if (q.get(keep[i])) out.set(keep[i], q.get(keep[i]));
+    var s = out.toString();
+    return l.origin + l.pathname + (s ? "?" + s : "");
+  }
+
   function send(name, options) {
     if (off()) return;
     var body = JSON.stringify({
       n: name,
-      u: l.href,
+      u: page_url(),
       r: d.referrer,
       s: site,
       w: w.innerWidth,
