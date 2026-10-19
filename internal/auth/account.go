@@ -331,3 +331,9 @@ func (s *Service) SweepTokens(ctx context.Context) error {
 	_, err := s.st.W.ExecContext(ctx, `DELETE FROM email_tokens WHERE expires_at <= ?`, s.now().Unix())
 	return err
 }
+
+// ConfirmPassword, geri alınamaz işlemlerden önce kullanıcının şifresini doğrular
+// (oturum açmaz). Yanlışsa ErrWrongPassword.
+func (s *Service) ConfirmPassword(ctx context.Context, userID int64, password string) error {
+	return s.checkCurrent(ctx, userID, password)
+}

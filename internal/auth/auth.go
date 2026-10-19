@@ -187,6 +187,11 @@ func hashToken(token string) []byte {
 	return h[:]
 }
 
+// StartSession kullanıcı için yeni bir oturum açar (ör. davetle hesap açınca).
+func (s *Service) StartSession(ctx context.Context, userID int64) (string, error) {
+	return s.createSession(ctx, userID)
+}
+
 func (s *Service) createSession(ctx context.Context, userID int64) (string, error) {
 	token, h, err := newToken()
 	if err != nil {
