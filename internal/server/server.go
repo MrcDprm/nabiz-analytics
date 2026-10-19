@@ -42,6 +42,8 @@ type Server struct {
 	eventLimit *limiter
 	// IP başına: dakikada 5 giriş denemesi.
 	loginLimit *limiter
+	// IP başına: saniyede 10 panel sorgusu, art arda 40 (bir panel ~10 istek atar).
+	statsLimit *limiter
 }
 
 func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Server {
@@ -50,6 +52,7 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 		csrf:       http.NewCrossOriginProtection(),
 		eventLimit: newLimiter(20, 60, nil),
 		loginLimit: newLimiter(5.0/60, 5, nil),
+		statsLimit: newLimiter(10, 40, nil),
 	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("POST /api/event", s.event)
@@ -58,6 +61,11 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("POST /api/login", s.login)
 	s.mux.HandleFunc("POST /api/logout", s.logout)
 	s.mux.HandleFunc("GET /api/me", s.requireUser(s.me))
+
+	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
+	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
+	s.mux.HandleFunc("GET /api/stats/{domain}/breakdown", s.statsBreakdown)
+	s.mux.HandleFunc("GET /api/stats/{domain}/live", s.statsLive)
 	return s
 }
 
@@ -72,6 +80,7 @@ func (s *Server) Run(ctx context.Context) {
 		case <-t.C:
 			s.eventLimit.sweep()
 			s.loginLimit.sweep()
+			s.statsLimit.sweep()
 			if err := s.auth.Sweep(ctx); err != nil {
 				log.Printf("oturum temizliği: %v", err)
 			}
