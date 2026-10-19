@@ -10,6 +10,7 @@ import { drawChart } from "../components/chart.ts";
 import { createStrip } from "../components/strip.ts";
 import { createEventsPanel } from "../components/events.ts";
 import { createFunnelPanel } from "../components/funnel.ts";
+import { verifyBanner } from "./account.ts";
 
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 const LIVE_EVERY = 15_000;
@@ -224,6 +225,7 @@ export function dashboardView(root: HTMLElement, domain: string, user: User | nu
   );
   root.replaceChildren(
     header({ user, middle, right: [periodSel, custom], rerender: ctx.rerender, navigate: ctx.navigate }),
+    verifyBanner(user) ?? "",
     stripEl,
     main,
     footer(),

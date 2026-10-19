@@ -19,7 +19,14 @@ export function loginView(root: HTMLElement, ctx: { rerender(): void; navigate(p
     password,
     error,
     submit,
+    h("p", { class: "small alt" }, h("a", { href: "/forgot" }, t("forgot"))),
   );
+  // Kayıt açıksa "Hesap aç" bağlantısı.
+  api<{ signup: boolean }>("/api/config")
+    .then((c) => {
+      if (c.signup) form.append(h("p", { class: "small" }, t("noAccount"), " ", h("a", { href: "/signup" }, t("signup"))));
+    })
+    .catch(() => {});
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();

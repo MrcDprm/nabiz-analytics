@@ -230,6 +230,14 @@ input:not([type="checkbox"]) { border: 1px solid var(--grid-bold); border-radius
 .danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .danger:not(:disabled):hover { background: var(--heart); color: #fff; }
 
+.stack { display: grid; gap: 10px; }
+.stack .primary, .stack .danger, .stack .secondary { justify-self: start; margin-top: 4px; }
+.secondary { border: 1.5px solid var(--ink); color: var(--ink); font-weight: 700; padding: 9px 16px; border-radius: 6px; }
+.secondary:hover { background: var(--bar); }
+.ok { color: var(--ink); font-weight: 600; }
+.alt { margin-top: 14px; }
+.banner { background: var(--bar); border-bottom: 1px solid var(--grid-bold); }
+.banner .wrap { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
 .foot { margin-top: 40px; margin-bottom: 32px; font-size: 14px; color: var(--pencil); display: flex; gap: 18px; flex-wrap: wrap; }
 
 @media (max-width: 760px) {

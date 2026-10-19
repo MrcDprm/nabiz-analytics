@@ -74,6 +74,7 @@ export function header(o: ShellOptions): HTMLElement {
       "aria-label": t("langToggle"),
       onclick: () => {
         setLang(lang === "tr" ? "en" : "tr");
+        if (o.user) api("/api/account", { method: "PATCH", body: { locale: lang } }).catch(() => {});
         o.rerender();
       },
     },
@@ -110,6 +111,7 @@ export function header(o: ShellOptions): HTMLElement {
       ...(o.right ?? []),
       langBtn,
       themeBtn,
+      o.user && !o.hideAccount ? h("a", { class: "text-btn", href: "/account" }, t("account")) : null,
       account,
     ),
   );
