@@ -15,7 +15,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
           const path = (req.url ?? "").split("?")[0] ?? "";
-          if (/^\/[a-z0-9.-]+\.[a-z0-9-]+(\/[a-z]+)?\/?$/.test(path) && !assetExt.test(path)) req.url = "/index.html";
+          if (/^(\/settings)?\/[a-z0-9.-]+\.[a-z0-9-]+\/?$/.test(path) && !assetExt.test(path)) req.url = "/index.html";
           next();
         });
       },

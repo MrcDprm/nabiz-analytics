@@ -163,3 +163,29 @@ func (s *Server) statsLive(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, live)
 }
+
+func (s *Server) statsGoals(w http.ResponseWriter, r *http.Request) {
+	st, ok := s.statsSite(w, r)
+	if !ok {
+		return
+	}
+	q, ok := s.statsQuery(w, r, st.ID)
+	if !ok {
+		return
+	}
+	goals, err := site.Goals(r.Context(), s.store.R, st.ID)
+	if err != nil {
+		internalError(w, "stats hedefler", err)
+		return
+	}
+	defs := make([]stats.GoalDef, len(goals))
+	for i, g := range goals {
+		defs[i] = stats.GoalDef{ID: g.ID, Kind: g.Kind, Value: g.Value}
+	}
+	res, err := stats.GetGoals(r.Context(), s.store.R, q, defs)
+	if err != nil {
+		internalError(w, "stats hedefler", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"goals": res})
+}

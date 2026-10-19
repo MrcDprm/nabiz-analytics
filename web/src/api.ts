@@ -46,3 +46,5 @@ export type Timeseries = { range: Range; points: Point[] };
 export type Row = { value: string; visitors: number; count: number };
 export type Breakdown = { property: string; rows: Row[] };
 export type Live = { visitors: number; beats: number[] };
+export type Goal = { id: string; kind: "page" | "event"; value: string };
+export type GoalResult = Goal & { visitors: number; count: number; rate: number };

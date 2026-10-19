@@ -174,12 +174,13 @@ select {
 .rows .n { font-weight: 700; }
 .rows .code { font-size: 12px; font-weight: 700; color: var(--pencil); margin-right: 8px; }
 .panel-status { color: var(--pencil); margin: 6px 8px; }
+.row-static { position: relative; display: flex; justify-content: space-between; gap: 16px; padding: 7px 8px; }
+.rows .n .muted { font-weight: 500; margin-right: 6px; }
 .more { margin: 10px 8px 0; font-weight: 600; text-decoration: underline; text-decoration-color: var(--grid-bold); text-underline-offset: 3px; }
 
 /* Giriş */
 .login { display: grid; gap: 6px; }
 .login label { font-weight: 600; margin-top: 10px; }
-.login input { border: 1px solid var(--grid-bold); border-radius: 6px; padding: 10px 12px; background: var(--raised); }
 .primary { margin-top: 18px; justify-self: start; background: var(--heart); color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 6px; }
 .primary:disabled { opacity: 0.7; cursor: progress; }
 .form-error { color: var(--heart); font-weight: 600; margin: 8px 0 0; }
@@ -188,6 +189,37 @@ select {
 .site-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--grid-bold); }
 .site-list li { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 4px; border-bottom: 1px solid var(--grid-bold); }
 .site-list a { font-size: 20px; font-weight: 700; }
+
+/* Site ekleme ve ayarlar */
+.small { font-size: 14px; }
+.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inline input { flex: 1 1 220px; }
+input:not([type="checkbox"]) { border: 1px solid var(--grid-bold); border-radius: 6px; padding: 9px 12px; background: var(--raised); min-width: 0; }
+.add-site, .added { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--grid-bold); }
+.add-site h2, .added h2, .settings-block h2 { font-size: 20px; margin: 0 0 10px; }
+.add-site label { display: block; font-weight: 600; margin-bottom: 6px; }
+.add-site .primary, .inline .primary { margin-top: 0; }
+.added h3 { font-size: 16px; margin: 18px 0 6px; }
+.link-btn { display: inline-block; text-decoration: none; margin-top: 20px; }
+.snippet p { margin: 6px 0; }
+.code-row { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 14px; }
+.code-row code {
+  flex: 1; min-width: 0; overflow-wrap: anywhere;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 14px;
+  background: var(--bar); padding: 10px 12px; border-radius: 6px;
+}
+.settings-block { padding: 24px 0; border-top: 1px solid var(--grid-bold); }
+.settings-block:first-of-type { border-top: 0; padding-top: 0; }
+.check { display: flex; gap: 10px; align-items: center; font-weight: 600; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--heart); }
+.goal-list { list-style: none; padding: 0; margin: 12px 0; }
+.goal-list li { display: flex; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--grid-fine); }
+.goal-list .kind { font-size: 13px; font-weight: 700; color: var(--pencil); min-width: 48px; }
+.goal-list .v { flex: 1; overflow-wrap: anywhere; }
+.goal-form select { padding-top: 9px; padding-bottom: 9px; }
+.danger { background: transparent; color: var(--heart); border: 1.5px solid var(--heart); font-weight: 700; padding: 9px 16px; border-radius: 6px; }
+.danger:disabled { opacity: 0.45; cursor: not-allowed; }
+.danger:not(:disabled):hover { background: var(--heart); color: #fff; }
 
 .foot { margin-top: 40px; margin-bottom: 32px; font-size: 14px; color: var(--pencil); display: flex; gap: 18px; flex-wrap: wrap; }
 
