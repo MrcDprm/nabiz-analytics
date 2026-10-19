@@ -38,8 +38,14 @@ type Fake struct {
 	nextRef   int
 }
 
+// NewHandler, sunucusuz bir taklit döndürür (ör. elle deneme için http.ListenAndServe ile).
+func NewHandler() *Fake {
+	return &Fake{checkouts: map[string]string{}, subs: map[string]map[string]any{}}
+}
+
+// New taklidi bir test sunucusunda başlatır; test bitince kapanır.
 func New(t *testing.T) *Fake {
-	f := &Fake{checkouts: map[string]string{}, subs: map[string]map[string]any{}}
+	f := NewHandler()
 	srv := httptest.NewServer(f)
 	t.Cleanup(srv.Close)
 	f.URL, f.Client = srv.URL, srv.Client()
