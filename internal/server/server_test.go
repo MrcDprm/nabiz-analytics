@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/auth"
 	"github.com/MrcDprm/nabiz-analytics/internal/geo"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/salt"
@@ -28,7 +29,11 @@ func newTestServer(t *testing.T) (*Server, *store.Store) {
 	}
 	g, _ := geo.Open(filepath.Join(dir, "yok.mmdb"))
 	rec := ingest.NewRecorder(st, k, g, nil)
-	return New(Config{Mode: ModeSelfhost, Version: "test"}, st, rec), st
+	a, err := auth.NewService(st, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return New(Config{Mode: ModeSelfhost, Version: "test"}, st, rec, a), st
 }
 
 func TestHealthz(t *testing.T) {
