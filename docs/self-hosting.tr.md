@@ -50,7 +50,7 @@ Nabız `127.0.0.1:8081` adresini dinler; dışarıdan sadece ters proxy üzerind
 sudo systemctl reload caddy
 ```
 
-Caddy sertifikayı kendisi alır. `trusted_proxies` satırı sadece betiği sitenin kendi alan adından sunuyorsan önemli; bkz. [proxy.tr.md](proxy.tr.md).
+Caddy sertifikayı kendisi alır. `header_up X-Forwarded-For` satırı sadece betiği sitenin kendi alan adından sunuyorsan önemli; bkz. [proxy.tr.md](proxy.tr.md).
 
 ## 4. Hesabın ve ilk siten
 

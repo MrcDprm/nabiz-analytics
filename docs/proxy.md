@@ -79,8 +79,8 @@ location = /_v/e {
 
 ## How the visitor's address survives the proxy
 
-Behind a proxy the connection to Nabız comes from the proxy, not the visitor. The proxy puts the visitor's address first in the `X-Forwarded-For` header, and Nabız (with `-trust-proxy`, as in `deploy/nabiz.service`) counts visitors and finds their country from that first value. Caddy in front of Nabız must keep the header instead of replacing it, which is what `trusted_proxies` in `deploy/Caddyfile` does.
+Behind a proxy the connection to Nabız comes from the proxy, not the visitor. The proxy puts the visitor's address first in the `X-Forwarded-For` header, and Nabız (with `-trust-proxy`, as in `deploy/nabiz.service`) counts visitors and finds their country from that first value. Caddy in front of Nabız must keep that header instead of replacing it; the `header_up X-Forwarded-For` line in `deploy/Caddyfile` does this for the Nabız site only.
 
-The first value can be faked by anyone sending the request. At worst that inflates unique visitor counts or changes a country; nobody's data is exposed. Rate limiting uses the last value, the address that actually connected, so it can't be dodged this way. Without `trusted_proxies`, everything still works, but all visitors coming through the proxy count as one.
+The first value can be faked by anyone sending the request. At worst that inflates unique visitor counts or changes a country; nobody's data is exposed. Rate limiting uses the last value, the address that actually connected, so it can't be dodged this way. Without that line, everything still works, but all visitors coming through the proxy count as one.
 
 The `Origin` header is set by the browser and passes through the proxy unchanged, so Nabız still accepts events only from your registered site.
