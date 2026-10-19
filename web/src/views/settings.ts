@@ -126,8 +126,11 @@ export async function settingsView(root: HTMLElement, site: Site, user: User, ct
   function addStep(kindValue = "page", value = "") {
     const kindSel = h("select", { "aria-label": t("stepLabel") }, h("option", { value: "page" }, t("goalKindPage")), h("option", { value: "event" }, t("goalKindEvent")));
     kindSel.value = kindValue;
-    const input = h("input", { "aria-label": t("goalValue"), placeholder: kindValue === "page" ? "/projects" : "CV indir", value, required: true });
-    kindSel.addEventListener("change", () => (input.placeholder = kindSel.value === "page" ? "/projects" : "CV indir"));
+    // Örnek metin adımın sırasına göre: bir huni yolu gibi okunsun ("/" → "/projects" → "/iletisim").
+    const examplePage = ["/", "/projects", "/iletisim"][stepsBox.children.length] ?? "/tesekkurler";
+    const example = () => (kindSel.value === "page" ? examplePage : "CV indir");
+    const input = h("input", { "aria-label": t("goalValue"), placeholder: example(), value, required: true });
+    kindSel.addEventListener("change", () => (input.placeholder = example()));
     const li = h("li", { class: "inline" }, kindSel, input);
     li.append(h("button", {
       type: "button",
