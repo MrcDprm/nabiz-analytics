@@ -33,7 +33,7 @@ var contentTypes = map[string]string{
 func (s *Server) webRoutes() {
 	index := s.serveFile("index.html", "no-cache")
 	s.mux.HandleFunc("GET /{$}", index)
-	for _, p := range []string{"/login", "/signup", "/verify", "/forgot", "/reset", "/account"} {
+	for _, p := range []string{"/login", "/signup", "/verify", "/forgot", "/reset", "/account", "/invite"} {
 		s.mux.HandleFunc("GET "+p, index)
 	}
 	sitePage := func(w http.ResponseWriter, r *http.Request) {
