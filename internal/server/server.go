@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
 
@@ -27,15 +28,38 @@ type Config struct {
 }
 
 type Server struct {
-	cfg   Config
-	store *store.Store
-	mux   *http.ServeMux
+	cfg      Config
+	store    *store.Store
+	recorder *ingest.Recorder
+	mux      *http.ServeMux
+
+	// IP başına: saniyede 20 olay, art arda en fazla 60. Aynı ağdaki (ör. bir
+	// ofis) birçok kişi tek IP'den gelebilir, o yüzden cömert.
+	eventLimit *limiter
 }
 
-func New(cfg Config, st *store.Store) *Server {
-	s := &Server{cfg: cfg, store: st, mux: http.NewServeMux()}
+func New(cfg Config, st *store.Store, rec *ingest.Recorder) *Server {
+	s := &Server{
+		cfg: cfg, store: st, recorder: rec, mux: http.NewServeMux(),
+		eventLimit: newLimiter(20, 60, nil),
+	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
+	s.mux.HandleFunc("POST /api/event", s.event)
 	return s
+}
+
+// Run arka plan temizliklerini dakikada bir çalıştırır; ctx bitince durur.
+func (s *Server) Run(ctx context.Context) {
+	t := time.NewTicker(time.Minute)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			s.eventLimit.sweep()
+		}
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

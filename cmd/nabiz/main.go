@@ -14,6 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/geo"
+	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
+	"github.com/MrcDprm/nabiz-analytics/internal/salt"
 	"github.com/MrcDprm/nabiz-analytics/internal/server"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
@@ -24,6 +27,7 @@ const usage = `nabiz: çerezsiz web analitiği
 
 Kullanım:
   nabiz [serve] [-addr ADRES] [-data KLASÖR] [-mode selfhost|cloud] [-trust-proxy]
+  nabiz geoip update [-data KLASÖR]   ülke veritabanını (DB-IP Lite) indirir ya da yeniler
   nabiz version
 
 Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE, NABIZ_TRUST_PROXY=1.
@@ -34,6 +38,11 @@ func main() {
 	cmd := "serve"
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
+	}
+	// "geoip update" iki kelimelik komut; bayraklar ikinci kelimeden sonra gelir.
+	sub := ""
+	if cmd == "geoip" && len(args) > 0 && args[0] != "" && args[0][0] != '-' {
+		sub, args = args[0], args[1:]
 	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
 	fs.Usage = func() { fmt.Fprint(os.Stderr, usage) }
@@ -46,6 +55,18 @@ func main() {
 	switch cmd {
 	case "version":
 		fmt.Println("nabiz", version)
+	case "geoip":
+		if sub != "update" || fs.NArg() != 0 {
+			fmt.Fprint(os.Stderr, usage)
+			os.Exit(2)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		client := &http.Client{Timeout: 5 * time.Minute}
+		if err := geo.Update(ctx, client, geo.DefaultBaseURL, geoPath(*data), time.Now()); err != nil {
+			log.Fatalf("nabiz: geoip: %v", err)
+		}
+		fmt.Println("Ülke veritabanı güncellendi. Çalışan sunucuya SIGHUP gönderince yeni dosyayı yükler.")
 	case "serve":
 		m := server.Mode(*mode)
 		if m != server.ModeSelfhost && m != server.ModeCloud {
@@ -69,6 +90,28 @@ func env(key, fallback string) string {
 	return fallback
 }
 
+func geoPath(dataDir string) string { return filepath.Join(dataDir, "geoip.mmdb") }
+
+// reloadGeoOnHUP: "nabiz geoip update" sonrası "systemctl reload nabiz" (SIGHUP)
+// sunucuyu durdurmadan yeni ülke dosyasını yükler.
+func reloadGeoOnHUP(ctx context.Context, l *geo.Locator) {
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+	defer signal.Stop(hup)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-hup:
+			if err := l.Reload(); err != nil {
+				log.Printf("nabiz: geoip yeniden yüklenemedi: %v", err)
+			} else {
+				log.Print("nabiz: ülke veritabanı yeniden yüklendi")
+			}
+		}
+	}
+}
+
 func serve(cfg server.Config, addr, dataDir string) error {
 	// 0700: veritabanını sadece sunucuyu çalıştıran kullanıcı okuyabilsin.
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
@@ -83,9 +126,27 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	keeper, err := salt.New(ctx, st.W, nil)
+	if err != nil {
+		return err
+	}
+	locator, err := geo.Open(geoPath(dataDir))
+	if err != nil {
+		return err
+	}
+	if !locator.Loaded() {
+		log.Print("nabiz: ülke veritabanı yok, ülkeler boş kalacak (nabiz geoip update)")
+	}
+	go reloadGeoOnHUP(ctx, locator)
+
+	rec := ingest.NewRecorder(st, keeper, locator, nil)
+	srv := server.New(cfg, st, rec)
+	go rec.Run(ctx)
+	go srv.Run(ctx)
+
 	hs := &http.Server{
 		Addr:              addr,
-		Handler:           server.New(cfg, st),
+		Handler:           srv,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      30 * time.Second, // CSV dışa aktarma bile bunun altında biter

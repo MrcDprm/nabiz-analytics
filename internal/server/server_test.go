@@ -1,23 +1,34 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/geo"
+	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
+	"github.com/MrcDprm/nabiz-analytics/internal/salt"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
 
 func newTestServer(t *testing.T) (*Server, *store.Store) {
 	t.Helper()
-	st, err := store.Open(filepath.Join(t.TempDir(), "nabiz.db"))
+	dir := t.TempDir()
+	st, err := store.Open(filepath.Join(dir, "nabiz.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	return New(Config{Mode: ModeSelfhost, Version: "test"}, st), st
+	k, err := salt.New(context.Background(), st.W, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, _ := geo.Open(filepath.Join(dir, "yok.mmdb"))
+	rec := ingest.NewRecorder(st, k, g, nil)
+	return New(Config{Mode: ModeSelfhost, Version: "test"}, st, rec), st
 }
 
 func TestHealthz(t *testing.T) {
