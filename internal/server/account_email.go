@@ -221,5 +221,10 @@ func (s *Server) deleteAccount(w http.ResponseWriter, r *http.Request, u *auth.U
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// onAccountDelete, hesap silinmeden önce dış işleri yapar (ödeme adımında abonelik iptali eklenecek).
-func (s *Server) onAccountDelete(ctx context.Context, userID int64) error { return nil }
+// onAccountDelete, hesap silinmeden önce aktif aboneliği iptal eder (bir daha çekim olmasın).
+func (s *Server) onAccountDelete(ctx context.Context, userID int64) error {
+	if s.cfg.Billing == nil {
+		return nil
+	}
+	return s.cfg.Billing.OnAccountDelete(ctx, userID)
+}

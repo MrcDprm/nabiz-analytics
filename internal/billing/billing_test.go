@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MrcDprm/nabiz-analytics/internal/billing/billingtest"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
 
@@ -21,7 +22,7 @@ var customer = Customer{Name: "Ali", Surname: "Yılmaz", Email: "ali@example.com
 type env struct {
 	s    *Service
 	st   *store.Store
-	fake *fakeIyzico
+	fake *billingtest.Fake
 	now  *time.Time
 }
 
@@ -33,7 +34,8 @@ func setup(t *testing.T) env {
 	}
 	t.Cleanup(func() { st.Close() })
 	st.W.Exec(`INSERT INTO users (id, email, password_hash, created_at) VALUES (1, 'ali@example.com', 'x', 0)`)
-	fake, iyz := newFakeIyzico(t)
+	fake := billingtest.New(t)
+	iyz := &Iyzico{BaseURL: fake.URL, APIKey: billingtest.APIKey, SecretKey: billingtest.SecretKey, MerchantID: billingtest.MerchantID, HTTP: fake.Client}
 	now := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
 	return env{New(st, iyz, codes, func() time.Time { return now }), st, fake, &now}
 }
@@ -143,7 +145,7 @@ func TestWebhooks(t *testing.T) {
 	}
 	e.s.forget(1)
 	st, _ = e.s.StatusOf(ctx, 1)
-	if st.State != "active" || st.PeriodEnd.Unix() != 1_900_000_000 {
+	if st.State != "active" || st.PeriodEnd.UnixMilli() != billingtest.RenewedMs {
 		t.Fatalf("başarılı çekim sonrası = %+v", st)
 	}
 
@@ -163,7 +165,7 @@ func TestUnpaidGraceEnds(t *testing.T) {
 	e.subscribe(t, "growth", "monthly")
 	ev := webhook(e, "subscription.order.failure", "1")
 	e.s.HandleWebhook(ctx, ev, e.s.iyz.WebhookSignature(ev))
-	*e.now = time.UnixMilli(1_800_000_000_000).Add(GracePeriod + time.Hour)
+	*e.now = time.UnixMilli(billingtest.EndDateMs).Add(GracePeriod + time.Hour)
 	e.s.forget(1)
 	if st, _ := e.s.StatusOf(ctx, 1); st.Plan.ID != Free {
 		t.Fatalf("ödemesiz süre bitti ama paket = %+v", st.Plan)
@@ -184,7 +186,7 @@ func TestCancelKeepsPaidPeriod(t *testing.T) {
 	if st.State != "canceled" || st.Plan.ID != Starter {
 		t.Fatalf("iptal sonrası dönem içinde = %+v", st)
 	}
-	*e.now = time.UnixMilli(1_800_000_000_000).Add(time.Hour)
+	*e.now = time.UnixMilli(billingtest.EndDateMs).Add(time.Hour)
 	e.s.forget(1)
 	if st, _ := e.s.StatusOf(ctx, 1); st.Plan.ID != Free {
 		t.Fatalf("dönem bitti ama paket = %+v", st.Plan)
@@ -209,7 +211,7 @@ func TestChangePlan(t *testing.T) {
 	}
 	var ref string
 	e.st.R.QueryRow(`SELECT iyzico_ref FROM subscriptions WHERE user_id = 1`).Scan(&ref)
-	if ref != "abonelik-2" {
+	if ref != "abonelik-2" { // ödeme abonelik-1'i, yükseltme abonelik-2'yi üretti
 		t.Fatalf("yeni abonelik referansı kaydedilmedi: %q", ref)
 	}
 }
@@ -273,8 +275,7 @@ func TestAccountDeleteCancels(t *testing.T) {
 	if err := e.s.OnAccountDelete(ctx, 1); err != nil {
 		t.Fatal(err)
 	}
-	last := e.fake.calls[len(e.fake.calls)-1]
-	if last != "POST /v2/subscription/subscriptions/abonelik-1/cancel" {
-		t.Fatalf("iptal çağrılmadı: %v", e.fake.calls)
+	if last := e.fake.LastCall(); last != "POST /v2/subscription/subscriptions/abonelik-1/cancel" {
+		t.Fatalf("iptal çağrılmadı: %v", last)
 	}
 }

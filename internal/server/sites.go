@@ -39,6 +39,12 @@ func (s *Server) createSite(w http.ResponseWriter, r *http.Request, u *auth.User
 	if !readJSON(w, r, &in) {
 		return
 	}
+	if s.cfg.Billing != nil {
+		if err := s.cfg.Billing.CanAddSite(r.Context(), u.ID); err != nil {
+			billingError(w, "site sınırı", err)
+			return
+		}
+	}
 	st, err := site.Create(r.Context(), s.store, in.Domain, u.ID)
 	switch {
 	case errors.Is(err, site.ErrInvalidDomain), errors.Is(err, site.ErrDomainTaken):

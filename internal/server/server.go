@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MrcDprm/nabiz-analytics/internal/auth"
+	"github.com/MrcDprm/nabiz-analytics/internal/billing"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
 	"github.com/MrcDprm/nabiz-analytics/internal/mail"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
@@ -34,6 +35,7 @@ type Config struct {
 	BaseURL    string // e-postalardaki bağlantılar için (ör. https://nabiz.example.com)
 	Signup     bool   // herkese açık kayıt açık mı
 	Mail       mail.Sender
+	Billing    *billing.Service // nil: ödeme ve limit yok (kendi sunucunda kurulum)
 }
 
 type Server struct {
@@ -106,6 +108,13 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("POST /api/sites/{id}/transfer", s.requireUser(s.transferSite))
 	s.mux.HandleFunc("POST /api/invites/info", s.inviteInfo)
 	s.mux.HandleFunc("POST /api/invites/accept", s.acceptInvite)
+	s.mux.HandleFunc("GET /api/billing", s.requireUser(s.billingStatus))
+	s.mux.HandleFunc("POST /api/billing/checkout", s.requireUser(s.checkout))
+	s.mux.HandleFunc("POST /api/billing/cancel", s.requireUser(s.cancelSubscription))
+	s.mux.HandleFunc("POST /api/billing/change", s.requireUser(s.changePlan))
+	s.mux.HandleFunc("POST /api/billing/callback", s.billingCallback)
+	s.mux.HandleFunc("POST /api/billing/webhook", s.billingWebhook)
+	s.mux.HandleFunc("GET /billing/pay/{token}", s.payPage)
 
 	s.mux.HandleFunc("GET /api/stats/{domain}/summary", s.statsSummary)
 	s.mux.HandleFunc("GET /api/stats/{domain}/timeseries", s.statsTimeseries)
@@ -139,6 +148,11 @@ func (s *Server) Run(ctx context.Context) {
 			if err := s.team.Sweep(ctx); err != nil {
 				log.Printf("davet temizliği: %v", err)
 			}
+			if s.cfg.Billing != nil {
+				if err := s.cfg.Billing.Sweep(ctx); err != nil {
+					log.Printf("ödeme temizliği: %v", err)
+				}
+			}
 			if err := s.auth.Sweep(ctx); err != nil {
 				log.Printf("oturum temizliği: %v", err)
 			}
@@ -153,9 +167,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	// CSRF: başka bir siteden gelen POST/PATCH/DELETE isteklerini reddet
-	// (tarayıcının Sec-Fetch-Site ve Origin başlıklarına bakar). Takip ucu
-	// bilerek başka sitelerden çağrıldığı için hariç; o Origin'i kendisi denetler.
-	if r.URL.Path != "/api/event" {
+	// (tarayıcının Sec-Fetch-Site ve Origin başlıklarına bakar). Hariç tutulanlar:
+	// takip ucu (başka sitelerden çağrılır, Origin'i kendisi denetler), iyzico'nun
+	// ödeme dönüşü (iyzico sayfasından gelir, sonucu iyzico'ya sorarız) ve webhook (imzalı).
+	if p := r.URL.Path; p != "/api/event" && p != "/api/billing/callback" && p != "/api/billing/webhook" {
 		if err := s.csrf.Check(r); err != nil {
 			writeError(w, http.StatusForbidden, "başka bir siteden gelen istek reddedildi")
 			return
