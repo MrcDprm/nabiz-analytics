@@ -109,6 +109,28 @@ func TestEventRateLimit(t *testing.T) {
 	}
 }
 
+func TestVisitorIP(t *testing.T) {
+	s, _ := newTestServer(t)
+	req := httptest.NewRequest("POST", "/api/event", nil)
+	req.RemoteAddr = "127.0.0.1:4000"
+	// Ziyaretçi → Vercel (76.76.21.21) → Caddy: Caddy son değeri (Vercel) ekler.
+	req.Header.Set("X-Forwarded-For", "81.214.1.1, 76.76.21.21")
+	if ip := s.visitorIP(req); ip != "127.0.0.1" {
+		t.Fatalf("proxy'ye güvenilmezken = %s", ip)
+	}
+	s.cfg.TrustProxy = true
+	if ip := s.visitorIP(req); ip != "81.214.1.1" {
+		t.Fatalf("ziyaretçi = %s, ilk değer olmalı", ip)
+	}
+	if ip := s.clientIP(req); ip != "76.76.21.21" {
+		t.Fatalf("bağlantı = %s, son değer olmalı (hız sınırı bununla)", ip)
+	}
+	req.Header.Set("X-Forwarded-For", "bozuk, 76.76.21.21")
+	if ip := s.visitorIP(req); ip != "76.76.21.21" {
+		t.Fatalf("bozuk ilk değer = %s", ip)
+	}
+}
+
 func TestClientIP(t *testing.T) {
 	s, _ := newTestServer(t)
 	req := httptest.NewRequest("POST", "/api/event", nil)
