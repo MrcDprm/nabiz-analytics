@@ -12,7 +12,15 @@ Nabız is one program file and an SQLite database. On your own server there are 
 
 ## 1. Get the program
 
-Download `nabiz-linux-amd64` or `nabiz-linux-arm64` from the [latest release](https://github.com/MrcDprm/nabiz-analytics/releases/latest), or build it yourself (Go 1.27 and Node 24):
+Download the package for your server from the [latest release](https://github.com/MrcDprm/nabiz-analytics/releases/latest) and unpack it (use `arm64` instead of `amd64` on ARM servers):
+
+```sh
+curl -LO https://github.com/MrcDprm/nabiz-analytics/releases/latest/download/nabiz-linux-amd64.tar.gz
+tar xzf nabiz-linux-amd64.tar.gz
+cd nabiz-linux-amd64
+```
+
+The package holds the `nabiz` program and the `deploy/` folder used below. To build it yourself instead (Go 1.27 and Node 24):
 
 ```sh
 git clone https://github.com/MrcDprm/nabiz-analytics
