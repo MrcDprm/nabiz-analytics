@@ -1,0 +1,16 @@
+# Caddy, Nabız'ın önünde: HTTPS sertifikası ve sıkıştırma. Erişim log'u açık değil
+# (Caddy varsayılan olarak tutmaz); IP adresleri hiçbir yere yazılmaz.
+{
+	servers {
+		# Proxy üzerinden (ör. Vercel) gelen isteklerde ziyaretçinin adresi
+		# X-Forwarded-For'da gelir; Caddy onu silmesin, sonuna bağlantının
+		# adresini eklesin. Nabız sayım için ilk değeri, hız sınırı için son
+		# değeri kullanır (docs/proxy.md).
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+nabiz.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+}

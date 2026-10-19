@@ -1,0 +1,41 @@
+# Nabız için systemd birimi. Kurulum: docs/self-hosting.md
+#   sudo useradd --system --home /var/lib/nabiz --shell /usr/sbin/nologin nabiz
+#   sudo install -m 0755 nabiz /usr/local/bin/nabiz
+#   sudo install -m 0644 deploy/nabiz.service /etc/systemd/system/
+#   sudo systemctl enable --now nabiz
+[Unit]
+Description=Nabız cookie-free web analytics
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=nabiz
+Group=nabiz
+# Gizli ayarlar (SMTP, iyzico) bu dosyada; sadece root okuyabilir (chmod 600).
+EnvironmentFile=-/etc/nabiz/nabiz.env
+ExecStart=/usr/local/bin/nabiz serve -addr 127.0.0.1:8081 -data /var/lib/nabiz -trust-proxy
+# systemctl reload nabiz: yeni ülke veritabanını durmadan yükler.
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+StateDirectory=nabiz
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

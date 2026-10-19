@@ -1,0 +1,19 @@
+# Ülke veritabanını (DB-IP Lite) indirir ve çalışan sunucuya yeniden yükletir.
+# nabiz-geoip.timer ayda bir çalıştırır.
+[Unit]
+Description=Nabız GeoIP database update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=nabiz
+Group=nabiz
+ExecStart=/usr/local/bin/nabiz geoip update -data /var/lib/nabiz
+# "+": bu satır root yetkisiyle çalışır (servisi yeniden yüklemek için).
+ExecStartPost=+/bin/systemctl reload nabiz.service
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nabiz
+ProtectHome=yes
+PrivateTmp=yes
