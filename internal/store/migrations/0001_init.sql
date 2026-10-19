@@ -94,17 +94,21 @@ CREATE TABLE sessions (
     browser      TEXT    NOT NULL DEFAULT '',
     os           TEXT    NOT NULL DEFAULT ''
 ) STRICT;
-CREATE INDEX sessions_site_time ON sessions (site_id, started_at);
+-- Kapsayıcı indeks: filtresiz özet ve zaman serisi tabloya hiç gitmeden buradan okunur.
+CREATE INDEX sessions_site_time ON sessions (site_id, started_at, visitor, pageviews, ended_at);
 
 CREATE TABLE events (
     id         INTEGER PRIMARY KEY,
     site_id    TEXT    NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
     ts         INTEGER NOT NULL,
     session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    visitor    INTEGER NOT NULL, -- sessions'taki ile aynı; sayfa sorguları join yapmasın diye burada da
     name       TEXT    NOT NULL,
     pathname   TEXT    NOT NULL
 ) STRICT;
-CREATE INDEX events_site_time ON events (site_id, ts);
+CREATE INDEX events_site_time ON events (site_id, ts, name, pathname, visitor);
+-- Sayfa listesi ve sayfa filtresi için: sayfaya göre sıralı, sıralamaya gerek kalmaz.
+CREATE INDEX events_page ON events (site_id, name, pathname, ts, visitor);
 CREATE INDEX events_session ON events (session_id);
 
 CREATE TABLE event_props (
