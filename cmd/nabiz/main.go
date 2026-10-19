@@ -11,12 +11,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/MrcDprm/nabiz-analytics/internal/auth"
 	"github.com/MrcDprm/nabiz-analytics/internal/geo"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
+	"github.com/MrcDprm/nabiz-analytics/internal/mail"
 	"github.com/MrcDprm/nabiz-analytics/internal/salt"
 	"github.com/MrcDprm/nabiz-analytics/internal/server"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
@@ -28,13 +30,18 @@ var version = "dev"
 const usage = `nabiz: çerezsiz web analitiği
 
 Kullanım:
-  nabiz [serve] [-addr ADRES] [-data KLASÖR] [-mode selfhost|cloud] [-trust-proxy]
+  nabiz [serve] [-addr ADRES] [-data KLASÖR] [-mode selfhost|cloud] [-trust-proxy] [-base-url URL] [-signup]
   nabiz geoip update [-data KLASÖR]               ülke veritabanını (DB-IP Lite) indirir ya da yeniler
   nabiz user add [-data KLASÖR] E-POSTA           hesap açar (şifre ekranda görünmeden sorulur)
   nabiz site add [-data KLASÖR] -owner E-POSTA ALAN_ADI   site ekler
   nabiz version
 
-Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE, NABIZ_TRUST_PROXY=1.
+Her ayar ortam değişkeninden de gelebilir: NABIZ_ADDR, NABIZ_DATA, NABIZ_MODE, NABIZ_TRUST_PROXY=1,
+NABIZ_BASE_URL, NABIZ_SIGNUP=1.
+-base-url, e-postalardaki bağlantıların adresidir (ör. https://nabiz.example.com).
+-signup herkese açık kaydı açar (cloud modunda her zaman açık).
+E-posta: NABIZ_SMTP_HOST, NABIZ_SMTP_PORT, NABIZ_SMTP_USER, NABIZ_SMTP_PASS, NABIZ_SMTP_FROM.
+SMTP yoksa e-postalar log'a yazılır (geliştirme).
 `
 
 func main() {
@@ -55,6 +62,8 @@ func main() {
 	mode := fs.String("mode", env("NABIZ_MODE", string(server.ModeSelfhost)), "")
 	trustProxy := fs.Bool("trust-proxy", os.Getenv("NABIZ_TRUST_PROXY") == "1", "")
 	owner := fs.String("owner", "", "")
+	baseURL := fs.String("base-url", os.Getenv("NABIZ_BASE_URL"), "")
+	signup := fs.Bool("signup", os.Getenv("NABIZ_SIGNUP") == "1", "")
 	_ = fs.Parse(args)
 
 	switch cmd {
@@ -93,7 +102,25 @@ func main() {
 			fmt.Fprintln(os.Stderr, "nabiz: -mode selfhost ya da cloud olmalı")
 			os.Exit(2)
 		}
-		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker(), Web: web.Files()}
+		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker(), Web: web.Files(),
+			BaseURL: strings.TrimRight(*baseURL, "/"), Signup: *signup || m == server.ModeCloud}
+		if cfg.BaseURL == "" {
+			cfg.BaseURL = "http://" + *addr
+		}
+		smtpCfg, err := mail.FromEnv()
+		if err != nil {
+			log.Fatalf("nabiz: %v", err)
+		}
+		if smtpCfg != nil {
+			cfg.Mail = smtpCfg
+		}
+		// Barındırılan hizmette e-postalar gerçekten gitmeli ve bağlantılar HTTPS olmalı.
+		if m == server.ModeCloud && (smtpCfg == nil || !strings.HasPrefix(cfg.BaseURL, "https://")) {
+			log.Fatal("nabiz: cloud modunda NABIZ_SMTP_* ayarları ve https:// ile başlayan -base-url gerekli")
+		}
+		if smtpCfg == nil {
+			log.Print("nabiz: SMTP ayarı yok, e-postalar gönderilmeyip log'a yazılıyor (sadece geliştirme için)")
+		}
 		if err := serve(cfg, *addr, *data); err != nil {
 			log.Fatalf("nabiz: %v", err)
 		}

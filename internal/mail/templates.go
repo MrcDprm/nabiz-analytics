@@ -1,0 +1,105 @@
+package mail
+
+import "fmt"
+
+// Kind, hesap e-postasının türü.
+type Kind string
+
+const (
+	Verify       Kind = "verify"        // kayıttan sonra e-posta doğrulama
+	Reset        Kind = "reset"         // şifre sıfırlama
+	EmailChange  Kind = "email_change"  // yeni adresi doğrulama
+	AlreadyTaken Kind = "already_taken" // bu adresle tekrar kayıt denendi
+)
+
+type template struct{ subject, body string }
+
+// %[1]s: bağlantı. Metinler kısa ve düz; ne olduğu, ne yapılacağı, ne zaman biteceği.
+var templates = map[string]map[Kind]template{
+	"tr": {
+		Verify: {"Nabız hesabını doğrula", `Merhaba,
+
+Nabız hesabını açtın. E-posta adresini doğrulamak için bu bağlantıyı aç:
+
+%[1]s
+
+Bağlantı 24 saat geçerli. Bu hesabı sen açmadıysan bu e-postayı yok sayabilirsin.
+
+Nabız`},
+		Reset: {"Nabız şifreni sıfırla", `Merhaba,
+
+Nabız hesabın için şifre sıfırlama istendi. Yeni şifre belirlemek için bu bağlantıyı aç:
+
+%[1]s
+
+Bağlantı 1 saat geçerli ve bir kez kullanılabilir. Bunu sen istemediysen bu e-postayı yok say; şifren değişmez.
+
+Nabız`},
+		EmailChange: {"Nabız için yeni e-posta adresini doğrula", `Merhaba,
+
+Nabız hesabının e-posta adresini bu adresle değiştirmek istedin. Onaylamak için bu bağlantıyı aç:
+
+%[1]s
+
+Bağlantı 24 saat geçerli. Bunu sen istemediysen bu e-postayı yok say.
+
+Nabız`},
+		AlreadyTaken: {"Nabız hesabın zaten var", `Merhaba,
+
+Bu e-posta adresiyle yeni bir Nabız hesabı açılmaya çalışıldı, ama bu adresle zaten bir hesabın var. Giriş yapmak için:
+
+%[1]s
+
+Şifreni hatırlamıyorsan giriş sayfasındaki "Şifremi unuttum" bağlantısını kullanabilirsin. Bunu sen yapmadıysan bu e-postayı yok say.
+
+Nabız`},
+	},
+	"en": {
+		Verify: {"Verify your Nabız account", `Hi,
+
+You created a Nabız account. Open this link to verify your email address:
+
+%[1]s
+
+The link works for 24 hours. If you didn't create this account, you can ignore this email.
+
+Nabız`},
+		Reset: {"Reset your Nabız password", `Hi,
+
+Someone asked to reset the password of your Nabız account. Open this link to set a new password:
+
+%[1]s
+
+The link works for 1 hour and only once. If it wasn't you, ignore this email; your password stays the same.
+
+Nabız`},
+		EmailChange: {"Verify your new email for Nabız", `Hi,
+
+You asked to change the email of your Nabız account to this address. Open this link to confirm:
+
+%[1]s
+
+The link works for 24 hours. If it wasn't you, ignore this email.
+
+Nabız`},
+		AlreadyTaken: {"You already have a Nabız account", `Hi,
+
+Someone tried to create a new Nabız account with this email, but you already have one. To log in:
+
+%[1]s
+
+If you forgot your password, use "Forgot password" on the login page. If it wasn't you, ignore this email.
+
+Nabız`},
+	},
+}
+
+// Render konu ve gövdeyi dile göre üretir; bilinmeyen dilde İngilizce.
+func Render(lang string, kind Kind, link string) (subject, body string) {
+	t, ok := templates[lang]
+	if !ok {
+		t = templates["en"]
+	}
+	tpl := t[kind]
+	return tpl.subject, fmt.Sprintf(tpl.body, link)
+}

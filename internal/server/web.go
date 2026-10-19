@@ -33,7 +33,9 @@ var contentTypes = map[string]string{
 func (s *Server) webRoutes() {
 	index := s.serveFile("index.html", "no-cache")
 	s.mux.HandleFunc("GET /{$}", index)
-	s.mux.HandleFunc("GET /login", index)
+	for _, p := range []string{"/login", "/signup", "/verify", "/forgot", "/reset", "/account"} {
+		s.mux.HandleFunc("GET "+p, index)
+	}
 	sitePage := func(w http.ResponseWriter, r *http.Request) {
 		// Alan adına benzemeyen adresler (ör. /wp-admin) için 404.
 		if !site.ValidDomain(strings.ToLower(r.PathValue("domain"))) {

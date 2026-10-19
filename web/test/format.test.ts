@@ -30,3 +30,12 @@ test("eksen ölçeği", () => {
   assert.deepEqual(niceScale(0), { max: 5, step: 1 });
   assert.deepEqual(niceScale(1840), { max: 2000, step: 500 });
 });
+
+import { serverMessage } from "../src/errors.ts";
+
+test("sunucu hata mesajları", () => {
+  assert.equal(serverMessage("mevcut şifre yanlış", "tr"), "Mevcut şifre yanlış");
+  assert.equal(serverMessage("mevcut şifre yanlış", "en"), "Current password is wrong.");
+  assert.equal(serverMessage("bilinmeyen bir şey", "en"), null);
+  assert.equal(serverMessage("", "tr"), null);
+});

@@ -9,6 +9,8 @@ import { dashboardView } from "./views/dashboard.ts";
 import { loginView } from "./views/login.ts";
 import { notFoundView, sitesView } from "./views/sites.ts";
 import { settingsView } from "./views/settings.ts";
+import { forgotView, resetView, signupView, verifyView } from "./views/auth.ts";
+import { accountView } from "./views/account.ts";
 
 const root = document.getElementById("app")!;
 let leave: (() => void)[] = [];
@@ -35,9 +37,17 @@ async function render() {
 
   try {
     if (path === "/login") return loginView(root, ctx);
+    if (path === "/signup") return signupView(root, ctx);
+    if (path === "/verify") return verifyView(root, ctx);
+    if (path === "/forgot") return forgotView(root, ctx);
+    if (path === "/reset") return resetView(root, ctx);
     const user = await currentUser();
     const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
 
+    if (path === "/account") {
+      if (!user) return navigate("/login");
+      return accountView(root, user, ctx);
+    }
     if (path === "/") {
       if (!user) return navigate("/login");
       return sitesView(root, user, sites, ctx);

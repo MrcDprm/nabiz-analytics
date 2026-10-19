@@ -1,4 +1,6 @@
-import { api, ApiError, type Site, type User } from "../api.ts";
+import { api, type Site, type User } from "../api.ts";
+import { errText } from "./auth.ts";
+import { verifyBanner } from "./account.ts";
 import { h } from "../dom.ts";
 import { t } from "../i18n.ts";
 import { footer, header } from "../shell.ts";
@@ -50,8 +52,7 @@ export function sitesView(root: HTMLElement, user: User, sites: Site[], ctx: Ctx
       );
     } catch (err) {
       error.hidden = false;
-      // Sunucunun mesajı (ör. "bu site zaten ekli") Türkçe; İngilizcede genel mesaj.
-      error.textContent = err instanceof ApiError && err.status === 400 && err.message ? err.message : err instanceof ApiError && err.status === 0 ? t("errorOffline") : t("errorGeneric");
+      error.textContent = errText(err);
     } finally {
       submit.disabled = false;
       submit.textContent = t("addSite");
@@ -60,6 +61,7 @@ export function sitesView(root: HTMLElement, user: User, sites: Site[], ctx: Ctx
 
   root.replaceChildren(
     header({ user, rerender: ctx.rerender, navigate: ctx.navigate }),
+    verifyBanner(user) ?? "",
     h(
       "main",
       { class: "wrap narrow" },

@@ -11,6 +11,7 @@ import (
 
 	"github.com/MrcDprm/nabiz-analytics/internal/auth"
 	"github.com/MrcDprm/nabiz-analytics/internal/ingest"
+	"github.com/MrcDprm/nabiz-analytics/internal/mail"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
 )
 
@@ -29,6 +30,9 @@ type Config struct {
 	Version    string
 	Tracker    []byte // derlenmiş nabiz.js; nil ise /js/nabiz.js 404 döner
 	Web        fs.FS  // derlenmiş panel (web/dist); nil ise sadece API çalışır
+	BaseURL    string // e-postalardaki bağlantılar için (ör. https://nabiz.example.com)
+	Signup     bool   // herkese açık kayıt açık mı
+	Mail       mail.Sender
 }
 
 type Server struct {
@@ -46,15 +50,24 @@ type Server struct {
 	loginLimit *limiter
 	// IP başına: saniyede 10 panel sorgusu, art arda 40 (bir panel ~10 istek atar).
 	statsLimit *limiter
+	// IP başına: saatte 5 e-posta tetikleyen istek (kayıt, şifremi unuttum, tekrar gönder).
+	mailLimit *limiter
+	// IP başına: dakikada 10 şifre gerektiren hesap işlemi (değiştir, sil, sıfırla, doğrula).
+	accountLimit *limiter
 }
 
 func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Server {
 	s := &Server{
 		cfg: cfg, store: st, recorder: rec, auth: a, mux: http.NewServeMux(),
-		csrf:       http.NewCrossOriginProtection(),
-		eventLimit: newLimiter(20, 60, nil),
-		loginLimit: newLimiter(5.0/60, 5, nil),
-		statsLimit: newLimiter(10, 40, nil),
+		csrf:         http.NewCrossOriginProtection(),
+		eventLimit:   newLimiter(20, 60, nil),
+		loginLimit:   newLimiter(5.0/60, 5, nil),
+		statsLimit:   newLimiter(10, 40, nil),
+		mailLimit:    newLimiter(5.0/3600, 5, nil),
+		accountLimit: newLimiter(10.0/60, 10, nil),
+	}
+	if s.cfg.Mail == nil {
+		s.cfg.Mail = mail.LogSender{}
 	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("POST /api/event", s.event)
@@ -63,6 +76,16 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder, a *auth.Service) *Se
 	s.mux.HandleFunc("POST /api/login", s.login)
 	s.mux.HandleFunc("POST /api/logout", s.logout)
 	s.mux.HandleFunc("GET /api/me", s.requireUser(s.me))
+	s.mux.HandleFunc("GET /api/config", s.config)
+	s.mux.HandleFunc("POST /api/signup", s.signup)
+	s.mux.HandleFunc("POST /api/verify", s.verifyEmail)
+	s.mux.HandleFunc("POST /api/verify/resend", s.requireUser(s.resendVerification))
+	s.mux.HandleFunc("POST /api/password/forgot", s.forgotPassword)
+	s.mux.HandleFunc("POST /api/password/reset", s.resetPassword)
+	s.mux.HandleFunc("PATCH /api/account", s.requireUser(s.updateAccount))
+	s.mux.HandleFunc("POST /api/account/password", s.requireUser(s.changePassword))
+	s.mux.HandleFunc("POST /api/account/email", s.requireUser(s.changeEmail))
+	s.mux.HandleFunc("DELETE /api/account", s.requireUser(s.deleteAccount))
 	s.mux.HandleFunc("GET /api/sites", s.requireUser(s.listSites))
 	s.mux.HandleFunc("POST /api/sites", s.requireUser(s.createSite))
 	s.mux.HandleFunc("PATCH /api/sites/{id}", s.requireUser(s.updateSite))
@@ -98,6 +121,11 @@ func (s *Server) Run(ctx context.Context) {
 			s.eventLimit.sweep()
 			s.loginLimit.sweep()
 			s.statsLimit.sweep()
+			s.mailLimit.sweep()
+			s.accountLimit.sweep()
+			if err := s.auth.SweepTokens(ctx); err != nil {
+				log.Printf("token temizliği: %v", err)
+			}
 			if err := s.auth.Sweep(ctx); err != nil {
 				log.Printf("oturum temizliği: %v", err)
 			}

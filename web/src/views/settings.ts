@@ -1,17 +1,12 @@
 // Site ayarları: herkese açık panel, kurulum satırı, hedefler ve siteyi silme.
-import { api, ApiError, type Funnel, type Goal, type Site, type User } from "../api.ts";
+import { api, type Funnel, type Goal, type Site, type User } from "../api.ts";
 import { clear, h } from "../dom.ts";
 import { t } from "../i18n.ts";
 import { footer, header } from "../shell.ts";
 import { snippet } from "../components/snippet.ts";
+import { errText } from "./auth.ts";
 
 type Ctx = { rerender(): void; navigate(p: string): void };
-
-function errText(e: unknown): string {
-  if (e instanceof ApiError && e.status === 400 && e.message) return e.message;
-  if (e instanceof ApiError && e.status === 0) return t("errorOffline");
-  return t("errorGeneric");
-}
 
 export async function settingsView(root: HTMLElement, site: Site, user: User, ctx: Ctx) {
   const canEdit = site.role === "owner" || site.role === "admin";
