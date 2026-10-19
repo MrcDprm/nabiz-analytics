@@ -14,6 +14,8 @@ function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdrive
   const url = new URL(href);
   const location = {
     get href() { return url.href; },
+    get origin() { return url.origin; },
+    get search() { return url.search; },
     get pathname() { return url.pathname; },
     get hostname() { return url.hostname; },
     get protocol() { return url.protocol; },
@@ -39,7 +41,7 @@ function browser({ href = "https://a.com/", referrer = "", dnt, ignore, webdrive
     webdriver: !!webdriver,
     sendBeacon: (api, body) => { sent.push({ api, ...JSON.parse(body) }); return true; },
   };
-  const ctx = { window, document, location, navigator, URL, JSON };
+  const ctx = { window, document, location, navigator, URL, URLSearchParams, JSON };
   window.window = window;
   if (before) before(window);
   vm.createContext(ctx);
@@ -65,6 +67,12 @@ test("proxy kurulumu: betik sitenin kendi adresinden, olaylar data-api'ye", () =
   const b = browser({ href: "https://a.com/blog", src: "/_v/s.js", api: "/_v/e" });
   assert.equal(b.sent.length, 1);
   assert.equal(b.sent[0].api, "/_v/e");
+});
+
+test("# kısmı ve kaynak dışı sorgu değerleri gönderilmez", () => {
+  const b = browser({ href: "https://zarf.example.com/d/abc?token=gizli&utm_source=linkedin&ref=x#anahtar-gizli" });
+  assert.equal(b.sent[0].u, "https://zarf.example.com/d/abc?utm_source=linkedin&ref=x");
+  assert.ok(!JSON.stringify(b.sent).includes("gizli"));
 });
 
 test("SPA adres değişimini sayar, aynı adresi iki kez saymaz", () => {
