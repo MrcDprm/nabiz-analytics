@@ -13,6 +13,15 @@ export function percent(n: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(n / 100);
 }
 
+// Oran (0-100), tam sayıya yuvarlanmış. 3 kişi varken "%0", herkes gitmemişken
+// "%100" yazmasın diye uçlar "<%1" ve ">%99" olur.
+export function share(n: number, locale: string): string {
+  const f = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 });
+  if (n > 0 && n < 1) return "<" + f.format(0.01);
+  if (n > 99 && n < 100) return ">" + f.format(0.99);
+  return f.format(n / 100);
+}
+
 // Süre: "1 dk 32 sn", "45 sn", "2 sa 5 dk".
 export function duration(seconds: number, lang: "tr" | "en"): string {
   const s = Math.round(seconds);

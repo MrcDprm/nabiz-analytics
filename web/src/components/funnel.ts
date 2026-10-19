@@ -3,7 +3,7 @@
 import type { FunnelStats } from "../api.ts";
 import { clear, h } from "../dom.ts";
 import { locale, t } from "../i18n.ts";
-import { num } from "../format.ts";
+import { num, share } from "../format.ts";
 
 type Opts = {
   load(id: string | null, signal: AbortSignal): Promise<FunnelStats>;
@@ -54,7 +54,6 @@ export function createFunnelPanel(o: Opts) {
         status.append(t("noFunnelsDash"), " ");
         if (o.settingsHref) status.append(h("a", { href: o.settingsHref }, t("settings")));
       }
-      const pct = new Intl.NumberFormat(locale(), { style: "percent", maximumFractionDigits: 0 });
       steps.forEach((st, i) => {
         const li = h(
           "li",
@@ -62,8 +61,8 @@ export function createFunnelPanel(o: Opts) {
           h(
             "div",
             { class: "row-static" },
-            h("span", { class: "v" }, h("span", { class: "code" }, String(i + 1)), st.value, i > 0 && st.drop > 0 ? h("span", { class: "muted drop" }, ` −${pct.format(st.drop / 100)}`) : null),
-            h("span", { class: "n" }, h("span", { class: "muted" }, i > 0 ? `${pct.format(st.rate / 100)} ${t("ofFirst")}` : ""), "  ", num(st.visitors, locale())),
+            h("span", { class: "v" }, h("span", { class: "code" }, String(i + 1)), st.value, i > 0 && st.drop > 0 ? h("span", { class: "muted drop" }, ` −${share(st.drop, locale())}`) : null),
+            h("span", { class: "n" }, h("span", { class: "muted" }, i > 0 ? `${share(st.rate, locale())} ${t("ofFirst")}` : ""), "  ", num(st.visitors, locale())),
           ),
         );
         li.style.setProperty("--w", `${st.rate}%`);
