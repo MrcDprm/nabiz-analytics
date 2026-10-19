@@ -5,6 +5,7 @@ import { t } from "../i18n.ts";
 import { footer, header } from "../shell.ts";
 import { snippet } from "../components/snippet.ts";
 import { errText } from "./auth.ts";
+import { teamSection } from "../components/team.ts";
 
 type Ctx = { rerender(): void; navigate(p: string): void };
 
@@ -203,6 +204,7 @@ export async function settingsView(root: HTMLElement, site: Site, user: User, ct
       ),
       h("section", { class: "settings-block" }, h("h2", null, t("goals")), h("p", { class: "muted small" }, t("goalsHelp")), goalList, goalForm, goalError),
       h("section", { class: "settings-block" }, h("h2", null, t("funnels")), h("p", { class: "muted small" }, t("funnelsHelp")), funnelList, funnelForm, funnelError),
+      teamSection(site, user, () => ctx.navigate("/")),
       danger,
     ),
     footer(),

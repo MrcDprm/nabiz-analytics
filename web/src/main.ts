@@ -11,6 +11,7 @@ import { notFoundView, sitesView } from "./views/sites.ts";
 import { settingsView } from "./views/settings.ts";
 import { forgotView, resetView, signupView, verifyView } from "./views/auth.ts";
 import { accountView } from "./views/account.ts";
+import { inviteView, pendingInvite } from "./views/invite.ts";
 
 const root = document.getElementById("app")!;
 let leave: (() => void)[] = [];
@@ -44,12 +45,15 @@ async function render() {
     const user = await currentUser();
     const sites = user ? (await api<{ sites: Site[] }>("/api/sites")).sites : [];
 
+    if (path === "/invite") return inviteView(root, user, ctx);
     if (path === "/account") {
       if (!user) return navigate("/login");
       return accountView(root, user, ctx);
     }
     if (path === "/") {
       if (!user) return navigate("/login");
+      // Davet bağlantısından giriş yapmaya gelindiyse davete dön.
+      if (pendingInvite()) return navigate("/invite");
       return sitesView(root, user, sites, ctx);
     }
     if (path.startsWith("/settings/")) {

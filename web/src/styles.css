@@ -222,6 +222,10 @@ input:not([type="checkbox"]) { border: 1px solid var(--grid-bold); border-radius
 .goal-list .v { flex: 1; overflow-wrap: anywhere; }
 .goal-form select { padding-top: 9px; padding-bottom: 9px; }
 .goal-list .steps { display: block; margin-top: 2px; }
+.team-list li { align-items: center; }
+.team-list select { padding-top: 5px; padding-bottom: 5px; font-size: 14px; }
+.team-list .pending .v { color: var(--pencil); }
+.transfer h3 { font-size: 16px; margin: 20px 0 0; }
 .funnel-form { display: grid; gap: 10px; margin-top: 12px; }
 .step-list { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .step-list li::marker { color: var(--pencil); font-weight: 700; }
