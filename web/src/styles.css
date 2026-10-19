@@ -144,6 +144,7 @@ select {
 .legend { display: flex; gap: 22px; font-size: 14px; color: var(--pencil); margin-top: 10px; }
 .legend span::before { content: ""; display: inline-block; width: 22px; vertical-align: middle; margin-right: 8px; border-top: 2.5px solid var(--ink); }
 .legend span.p::before { border-top: 1.5px dashed var(--pencil); }
+.legend .export { margin-left: auto; font-weight: 600; color: var(--ink); }
 .notice { margin: 0 0 14px; padding: 10px 14px; border-radius: 6px; background: var(--bar); }
 
 /* Filtre satırı */
