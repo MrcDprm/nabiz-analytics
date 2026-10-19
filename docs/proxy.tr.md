@@ -79,8 +79,8 @@ location = /_v/e {
 
 ## Ziyaretçinin adresi proxy'den nasıl geçer
 
-Proxy arkasında Nabız'a bağlanan ziyaretçi değil proxy'dir. Proxy ziyaretçinin adresini `X-Forwarded-For` başlığının başına koyar. Nabız (`deploy/nabiz.service`'teki gibi `-trust-proxy` ile) ziyaretçiyi sayarken ve ülkesini bulurken bu ilk değeri kullanır. Nabız'ın önündeki Caddy de bu başlığı silmemeli, korumalı; `deploy/Caddyfile`'daki `trusted_proxies` satırı bunu yapar.
+Proxy arkasında Nabız'a bağlanan ziyaretçi değil proxy'dir. Proxy ziyaretçinin adresini `X-Forwarded-For` başlığının başına koyar. Nabız (`deploy/nabiz.service`'teki gibi `-trust-proxy` ile) ziyaretçiyi sayarken ve ülkesini bulurken bu ilk değeri kullanır. Nabız'ın önündeki Caddy de bu başlığı silmemeli, korumalı; `deploy/Caddyfile`'daki `header_up X-Forwarded-For` satırı bunu sadece Nabız sitesi için yapar.
 
-İlk değeri isteği gönderen herkes taklit edebilir. En kötü ihtimalle tekil ziyaretçi sayısı şişer ya da bir ülke yanlış görünür; kimsenin verisi açığa çıkmaz. Hız sınırı ise son değere, yani gerçekten bağlanan adrese bakar; bu yolla atlatılamaz. `trusted_proxies` olmadan da her şey çalışır, ama proxy'den gelen bütün ziyaretçiler tek kişi sayılır.
+İlk değeri isteği gönderen herkes taklit edebilir. En kötü ihtimalle tekil ziyaretçi sayısı şişer ya da bir ülke yanlış görünür; kimsenin verisi açığa çıkmaz. Hız sınırı ise son değere, yani gerçekten bağlanan adrese bakar; bu yolla atlatılamaz. Bu satır olmadan da her şey çalışır, ama proxy'den gelen bütün ziyaretçiler tek kişi sayılır.
 
 `Origin` başlığını tarayıcı koyar ve proxy'den değişmeden geçer; Nabız yine sadece kayıtlı sitenden gelen olayları kabul eder.

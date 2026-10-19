@@ -50,7 +50,7 @@ Copy `deploy/Caddyfile` to `/etc/caddy/Caddyfile` (or merge it into yours), repl
 sudo systemctl reload caddy
 ```
 
-Caddy gets the certificate by itself. The `trusted_proxies` line matters only if you serve the script through your site's own domain; see [proxy.md](proxy.md).
+Caddy gets the certificate by itself. The `header_up X-Forwarded-For` line matters only if you serve the script through your site's own domain; see [proxy.md](proxy.md).
 
 ## 4. Your account and your first site
 
