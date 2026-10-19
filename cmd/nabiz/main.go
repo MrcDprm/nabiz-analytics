@@ -19,6 +19,7 @@ import (
 	"github.com/MrcDprm/nabiz-analytics/internal/salt"
 	"github.com/MrcDprm/nabiz-analytics/internal/server"
 	"github.com/MrcDprm/nabiz-analytics/internal/store"
+	"github.com/MrcDprm/nabiz-analytics/web"
 )
 
 var version = "dev"
@@ -73,7 +74,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "nabiz: -mode selfhost ya da cloud olmalı")
 			os.Exit(2)
 		}
-		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version}
+		cfg := server.Config{Mode: m, TrustProxy: *trustProxy, Version: version, Tracker: web.Tracker()}
 		if err := serve(cfg, *addr, *data); err != nil {
 			log.Fatalf("nabiz: %v", err)
 		}
@@ -133,6 +134,9 @@ func serve(cfg server.Config, addr, dataDir string) error {
 	locator, err := geo.Open(geoPath(dataDir))
 	if err != nil {
 		return err
+	}
+	if cfg.Tracker == nil {
+		log.Print("nabiz: takip betiği derlenmemiş, /js/nabiz.js 404 dönecek (cd web && npm run build)")
 	}
 	if !locator.Loaded() {
 		log.Print("nabiz: ülke veritabanı yok, ülkeler boş kalacak (nabiz geoip update)")

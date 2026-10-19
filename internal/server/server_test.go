@@ -69,3 +69,22 @@ func TestUnknownPathIs404(t *testing.T) {
 		t.Fatalf("durum = %d, 404 olmalı", rec.Code)
 	}
 }
+
+func TestTrackerServed(t *testing.T) {
+	s, _ := newTestServer(t)
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, httptest.NewRequest("GET", "/js/nabiz.js", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("derlenmemiş betik: durum = %d, 404 olmalı", rec.Code)
+	}
+
+	s.cfg.Tracker = []byte("(function(){})();")
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, httptest.NewRequest("GET", "/js/nabiz.js", nil))
+	if rec.Code != http.StatusOK || rec.Body.String() != "(function(){})();" {
+		t.Fatalf("durum = %d, gövde = %q", rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/javascript; charset=utf-8" {
+		t.Fatalf("Content-Type = %q", ct)
+	}
+}

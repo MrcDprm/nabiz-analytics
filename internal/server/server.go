@@ -25,6 +25,7 @@ type Config struct {
 	Mode       Mode
 	TrustProxy bool // Caddy arkasında: istemci IP'si X-Forwarded-For'dan okunur
 	Version    string
+	Tracker    []byte // derlenmiş nabiz.js; nil ise /js/nabiz.js 404 döner
 }
 
 type Server struct {
@@ -45,6 +46,7 @@ func New(cfg Config, st *store.Store, rec *ingest.Recorder) *Server {
 	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("POST /api/event", s.event)
+	s.mux.HandleFunc("GET /js/nabiz.js", s.tracker)
 	return s
 }
 
@@ -80,6 +82,20 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": s.cfg.Version})
+}
+
+// tracker, takip betiğini sunar. Bir saatlik önbellek: betik güncellenince
+// siteler en geç bir saat içinde yenisini alır.
+func (s *Server) tracker(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Tracker == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	// Betik başka sitelerin sayfalarında çalışır; tarayıcının bunu engellememesi için.
+	w.Header().Set("Cross-Origin-Resource-Policy", "cross-origin")
+	_, _ = w.Write(s.cfg.Tracker)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
