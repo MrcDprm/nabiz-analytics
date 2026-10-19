@@ -159,6 +159,25 @@ func env(key, fallback string) string {
 
 func geoPath(dataDir string) string { return filepath.Join(dataDir, "geoip.mmdb") }
 
+// nightlyBackup, günde bir yedek alır (data/backup/nabiz-YYYY-AA-GG.db, son 7 gün).
+// Açılışta ve sonra saatte bir bakar; o günün yedeği varsa hiçbir şey yapmaz.
+func nightlyBackup(ctx context.Context, st *store.Store, dir string) {
+	t := time.NewTicker(time.Hour)
+	defer t.Stop()
+	for {
+		if path, err := st.Backup(ctx, dir, time.Now(), 7); err != nil {
+			log.Printf("nabiz: yedek alınamadı: %v", err)
+		} else if path != "" {
+			log.Printf("nabiz: yedek alındı: %s", filepath.Base(path))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}
+
 // reloadGeoOnHUP: "nabiz geoip update" sonrası "systemctl reload nabiz" (SIGHUP)
 // sunucuyu durdurmadan yeni ülke dosyasını yükler.
 func reloadGeoOnHUP(ctx context.Context, l *geo.Locator) {
@@ -211,6 +230,7 @@ func serve(cfg server.Config, addr, dataDir string, useBilling bool, iyz *billin
 		log.Print("nabiz: ülke veritabanı yok, ülkeler boş kalacak (nabiz geoip update)")
 	}
 	go reloadGeoOnHUP(ctx, locator)
+	go nightlyBackup(ctx, st, filepath.Join(dataDir, "backup"))
 
 	rec := ingest.NewRecorder(st, keeper, locator, nil)
 	authSvc, err := auth.NewService(st, nil)
