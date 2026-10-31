@@ -47,7 +47,7 @@ Cookie-free, privacy-friendly web analytics: a Google Analytics alternative that
 **Server**
 - Origin check against registered sites, bot filtering and rate limiting.
 - Local IP-to-country database (DB-IP Lite), no third-party lookup; refreshed monthly.
-- SQLite in WAL mode with covering indexes: dashboard queries stay under half a second at 1 million events.
+- SQLite in WAL mode with covering indexes: dashboard queries stay under a second at 1 million events.
 - Nightly backup, systemd unit with sandboxing, Caddy example.
 
 ## Screenshots
@@ -93,7 +93,7 @@ Tests: `go test ./...` and `cd web && npm test`.
 ## What I Learned
 
 - **Counting people without identifying them.** I hash the IP and user agent together with a salt that changes every day and is then deleted. The same person counts once per day, but even I can't link Monday's visit to Tuesday's. That one decision is why no cookie banner is needed.
-- **Making SQLite fast enough.** My first dashboard queries took 2 to 4 seconds at 1 million events. I wrote a benchmark, added covering indexes, replaced `COUNT(DISTINCT)` with my own aggregate function in Go and rewrote filters as `IN` subqueries. Every query now runs under 400 ms. I also learned to keep one connection for writes and a separate read-only pool, because SQLite allows a single writer.
+- **Making SQLite fast enough.** My first dashboard queries took 2 to 4 seconds at 1 million events. I wrote a benchmark, added covering indexes, replaced `COUNT(DISTINCT)` with my own aggregate function in Go and rewrote filters as `IN` subqueries. Every query now runs in under a second on my laptop. I also learned to keep one connection for writes and a separate read-only pool, because SQLite allows a single writer.
 - **Writing a tracker that stays under 1 KB.** `sendBeacon` with a `text/plain` body avoids the CORS preflight and still sends when the page is closing. Single-page apps don't reload, so I wrap `history.pushState` to count route changes.
 - **Privacy bugs hide in small details.** The tracker first sent `location.href`. On my file-sharing project Zarf, that would have leaked the decryption key in the `#` part of the address to the analytics server. Now it sends only the path and campaign parameters, and `data-mask` hides IDs in paths. I found the second case while adding Nabız to my own sites: a public dashboard would have shown booking IDs and joinable game room codes.
 - **Trusting the right IP address.** Behind a proxy, the first `X-Forwarded-For` entry is the visitor (used for counting and country) but can be faked, while the last entry is added by my own proxy (used for rate limiting). Mixing them up either breaks counting or lets anyone bypass the limits.

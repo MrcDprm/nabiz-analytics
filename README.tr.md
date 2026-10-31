@@ -47,7 +47,7 @@
 **Sunucu**
 - Kayıtlı sitelere göre Origin kontrolü, bot filtresi ve istek sınırlama.
 - Yerel IP-ülke veritabanı (DB-IP Lite), üçüncü taraf sorgusu yok; her ay yenilenir.
-- WAL modunda SQLite ve kapsayıcı indeksler: 1 milyon olayda panel sorguları yarım saniyenin altında.
+- WAL modunda SQLite ve kapsayıcı indeksler: 1 milyon olayda panel sorguları bir saniyenin altında.
 - Gece yedeği, korumalı systemd birimi, Caddy örneği.
 
 ## Ekran Görüntüleri
@@ -93,7 +93,7 @@ Testler: `go test ./...` ve `cd web && npm test`.
 ## Öğrendiklerim
 
 - **İnsanları tanımadan saymak.** IP'yi ve tarayıcı bilgisini her gün değişen, sonra silinen bir tuzla birlikte özetliyorum. Aynı kişi gün içinde bir kez sayılıyor ama pazartesi ve salı ziyaretlerini ben bile birbirine bağlayamıyorum. Çerez bandına gerek kalmamasının nedeni bu tek karar.
-- **SQLite'ı yeterince hızlandırmak.** İlk panel sorgularım 1 milyon olayda 2-4 saniye sürüyordu. Bir benchmark yazdım, kapsayıcı indeksler ekledim, `COUNT(DISTINCT)` yerine Go'da kendi toplama fonksiyonumu yazdım ve filtreleri `IN` alt sorgularına çevirdim. Şimdi her sorgu 400 ms'nin altında. SQLite aynı anda tek yazara izin verdiği için yazma işlerine tek bağlantı, okumaya ayrı bir salt okunur havuz ayırmayı da öğrendim.
+- **SQLite'ı yeterince hızlandırmak.** İlk panel sorgularım 1 milyon olayda 2-4 saniye sürüyordu. Bir benchmark yazdım, kapsayıcı indeksler ekledim, `COUNT(DISTINCT)` yerine Go'da kendi toplama fonksiyonumu yazdım ve filtreleri `IN` alt sorgularına çevirdim. Şimdi her sorgu dizüstü bilgisayarımda bir saniyenin altında. SQLite aynı anda tek yazara izin verdiği için yazma işlerine tek bağlantı, okumaya ayrı bir salt okunur havuz ayırmayı da öğrendim.
 - **1 KB altında kalan bir takip betiği yazmak.** `sendBeacon` ve `text/plain` gövde, CORS ön isteğine takılmıyor ve sayfa kapanırken bile gönderiyor. Tek sayfalık uygulamalar yeniden yüklenmediği için adres değişimlerini saymak üzere `history.pushState`'i sarıyorum.
 - **Gizlilik hataları küçük ayrıntılarda saklanır.** Betik önce `location.href`'i gönderiyordu. Dosya paylaşım projem Zarf'ta bu, adresin `#` kısmındaki şifre çözme anahtarını analitik sunucusuna sızdırırdı. Artık sadece yol ve kampanya parametreleri gidiyor; yollardaki kimlikleri de `data-mask` gizliyor. İkinci durumu Nabız'ı kendi sitelerime eklerken buldum: herkese açık panel rezervasyon kimliklerini ve katılınabilir oyun odası kodlarını gösterecekti.
 - **Doğru IP adresine güvenmek.** Proxy arkasında `X-Forwarded-For`'daki ilk değer ziyaretçidir (sayma ve ülke için kullanıyorum) ama sahte olabilir; son değeri ise benim proxy'im ekler (istek sınırlama için kullanıyorum). İkisini karıştırmak ya saymayı bozar ya da herkesin sınırı aşmasına izin verir.
